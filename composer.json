@@ -1,0 +1,37 @@
+{
+    "name"             : "block8/php-docblock-checker",
+    "description"      : "A simple tool for checking that your PHP classes and methods use docblocks.",
+    "minimum-stability": "stable",
+    "type"             : "library",
+    "keywords"         : ["php", "phpci", "testing", "docblock", "comment", "checker", "code quality"],
+    "homepage"         : "https://www.phptesting.org/",
+    "license"          : "BSD-2-Clause",
+
+    "authors": [
+        {
+            "name"    : "Dan Cryer",
+            "email"   : "dan.cryer@block8.co.uk",
+            "homepage": "http://www.block8.co.uk",
+            "role"    : "Developer"
+        }
+    ],
+
+    "support": {
+        "issues": "https://github.com/Block8/php-docblock-checker/issues",
+        "source": "https://github.com/Block8/php-docblock-checker"
+    },
+
+    "require": {
+        "php": ">=5.3.3",
+        "phpunit/php-token-stream": "1.*",
+        "symfony/console": "~2.1"
+    },
+
+    "bin": [
+        "phpdoccheck"
+    ],
+
+    "config": {
+        "bin-dir": "bin"
+    }
+}
