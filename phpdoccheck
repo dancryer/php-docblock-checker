@@ -8,7 +8,12 @@
  * @link         http://www.phptesting.org/
  */
 
-require_once(dirname(__FILE__) . '/vendor/autoload.php');
+$autoloader = dirname(__FILE__) . '/vendor/autoload.php';
+
+if (file_exists($autoloader)) {
+    require_once($autoloader);
+}
+
 require_once(dirname(__FILE__) . '/PhpDocblockChecker/CheckerApplication.php');
 require_once(dirname(__FILE__) . '/PhpDocblockChecker/CheckerCommand.php');
 
