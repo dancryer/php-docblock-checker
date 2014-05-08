@@ -8,10 +8,13 @@
  * @link         http://www.phptesting.org/
  */
 
-$autoloader = dirname(__FILE__) . '/vendor/autoload.php';
+$ownVendorAutoloader = dirname(__FILE__) . '/vendor/autoload.php';
+$parentVendorAutoloader = dirname(__FILE__) . '/../../autoload.php';
 
-if (file_exists($autoloader)) {
-    require_once($autoloader);
+if (file_exists($ownVendorAutoloader)) {
+    require_once($ownVendorAutoloader);
+} elseif (file_exists($parentVendorAutoloader)) {
+    require_once($parentVendorAutoloader);
 }
 
 require_once(dirname(__FILE__) . '/PhpDocblockChecker/CheckerApplication.php');
