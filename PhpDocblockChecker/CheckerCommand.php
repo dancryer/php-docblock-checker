@@ -53,6 +53,11 @@ class CheckerCommand extends Command
     protected $skipMethods = false;
 
     /**
+     * @var boolean
+     */
+    protected $showOnlyErrors = true;
+
+    /**
      * @var OutputInterface
      */
     protected $output;
@@ -66,7 +71,8 @@ class CheckerCommand extends Command
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Directory to scan.', './')
             ->addOption('skip-classes', null, InputOption::VALUE_NONE, 'Don\'t check classes for docblocks.')
             ->addOption('skip-methods', null, InputOption::VALUE_NONE, 'Don\'t check methods for docblocks.')
-            ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.');
+            ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.')
+            ->addOption('output-only-errors', null, InputOption::VALUE_NONE, 'Show only errors');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -79,6 +85,7 @@ class CheckerCommand extends Command
         $this->output = $output;
         $this->skipClasses = $input->getOption('skip-classes');
         $this->skipMethods = $input->getOption('skip-methods');
+        $this->showOnlyErrors = $input->getOption('output-only-errors');
 
         // Set up excludes:
         if (!is_null($exclude)) {
@@ -170,7 +177,7 @@ class CheckerCommand extends Command
                 }
             }
 
-            if (!$errors && $this->verbose) {
+            if (!$errors && $this->verbose && !$this->showOnlyErrors) {
                 $this->output->writeln($name . ' <info>OK</info>');
             }
         }
