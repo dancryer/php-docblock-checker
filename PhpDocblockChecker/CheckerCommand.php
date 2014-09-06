@@ -67,7 +67,7 @@ class CheckerCommand extends Command
         $this
             ->setName('check')
             ->setDescription('Check PHP files within a directory for appropriate use of Docblocks.')
-            ->addOption('exclude', 'x', InputOption::VALUE_REQUIRED, 'Files and directories to exclude.', null)
+            ->addOption('exclude', 'x', InputOption::VALUE_REQUIRED, 'Files and directories to exclude. You can use exlude patterns ex. */Tests/*', null)
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Directory to scan.', './')
             ->addOption('skip-classes', null, InputOption::VALUE_NONE, 'Don\'t check classes for docblocks.')
             ->addOption('skip-methods', null, InputOption::VALUE_NONE, 'Don\'t check methods for docblocks.')
@@ -119,7 +119,7 @@ class CheckerCommand extends Command
 
             $itemPath = $path . $item->getFilename();
 
-            if (in_array($itemPath, $this->exclude)) {
+            if ($this->exclude($itemPath)) {
                 continue;
             }
 
@@ -183,5 +183,38 @@ class CheckerCommand extends Command
         }
 
 
+    }
+
+    /**
+     * Check if path should be excluded
+     *
+     * @param  string $path
+     *
+     * @return boolean True if path has matched pattern
+     */
+    protected function exclude($path)
+    {
+        foreach ($this->exclude as $pattern) {
+
+            $replacements = array(
+             '\\,' => ',',
+             '*'   => '.*',
+            );
+
+            // We assume a / directory separator, as do the exclude rules
+            // most developers write, so we need a special case for any system
+            // that is different.
+            if (DIRECTORY_SEPARATOR === '\\') {
+                $replacements['/'] = '\\\\';
+            }
+
+            $pattern = strtr($pattern, $replacements);
+
+            if (preg_match("|{$pattern}|i", $path) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
