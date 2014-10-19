@@ -66,6 +66,7 @@ class CheckerCommand extends Command
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Directory to scan.', './')
             ->addOption('skip-classes', null, InputOption::VALUE_NONE, 'Don\'t check classes for docblocks.')
             ->addOption('skip-methods', null, InputOption::VALUE_NONE, 'Don\'t check methods for docblocks.')
+            ->addOption('skip-anonymous-functions', null, InputOption::VALUE_NONE, 'Don\'t check anonymous functions for docblocks.')
             ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.');
     }
 
@@ -79,6 +80,7 @@ class CheckerCommand extends Command
         $this->output = $output;
         $this->skipClasses = $input->getOption('skip-classes');
         $this->skipMethods = $input->getOption('skip-methods');
+        $this->skipAnonymousFunctions = $input->getOption('skip-anonymous-functions');
 
         // Set up excludes:
         if (!is_null($exclude)) {
@@ -152,6 +154,10 @@ class CheckerCommand extends Command
             if (!$this->skipMethods) {
                 foreach ($class['methods'] as $methodName => $method) {
                     if (is_null($method['docblock'])) {
+                        if ($this->skipAnonymousFunctions && $methodName == 'anonymous function') {
+                            continue;
+                        }
+
                         $errors = true;
 
                         $this->report[] = array(
