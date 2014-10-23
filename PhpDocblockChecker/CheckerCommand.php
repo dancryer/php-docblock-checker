@@ -151,6 +151,10 @@ class CheckerCommand extends Command
 
             if (!$this->skipMethods) {
                 foreach ($class['methods'] as $methodName => $method) {
+                    if ($methodName == 'anonymous function') {
+                        continue;
+                    }
+
                     if (is_null($method['docblock'])) {
                         $errors = true;
 
