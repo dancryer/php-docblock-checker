@@ -43,6 +43,11 @@ class CheckerCommand extends Command
     protected $exclude = array();
 
     /**
+     * @var array
+     */
+    protected $excludeGlobs = array();
+
+    /**
      * @var bool
      */
     protected $skipClasses = false;
@@ -82,7 +87,11 @@ class CheckerCommand extends Command
 
         // Set up excludes:
         if (!is_null($exclude)) {
+            $hasGlobs      = (strpos($exclude, '*') !== false);
             $this->exclude = array_map('trim', explode(',', $exclude));
+            if ($hasGlobs) {
+                $this->adjustExcludeGlobs();
+            }
         }
 
         // Check base path ends with a slash:
@@ -113,6 +122,10 @@ class CheckerCommand extends Command
             $itemPath = $path . $item->getFilename();
 
             if (in_array($itemPath, $this->exclude)) {
+                continue;
+            }
+
+            if (!empty($this->excludeGlobs) && $this->matchesGlob($itemPath)) {
                 continue;
             }
 
@@ -180,5 +193,26 @@ class CheckerCommand extends Command
         }
 
 
+    }
+
+    protected function adjustExcludeGlobs()
+    {
+        foreach ($this->exclude as $key => $glob) {
+            if (strpos($glob, '*')) {
+                $this->excludeGlobs[] = $glob;
+                unset($this->exclude[$key]);
+            }
+        }
+    }
+
+    protected function matchesGlob($itemName)
+    {
+        foreach ($this->excludeGlobs as $glob) {
+            if (fnmatch($glob, $itemName)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
