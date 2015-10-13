@@ -22,6 +22,6 @@ require_once(dirname(__FILE__) . '/PhpDocblockChecker/CheckerCommand.php');
 
 $command = new PhpDocblockChecker\CheckerCommand();
 
-$application = new PhpDocBlockChecker\CheckerApplication();
+$application = new PhpDocBlockChecker\CheckerApplication('PHP Docblock Checker', '@package_version@');
 $application->add($command);
 $application->run();
