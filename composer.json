@@ -24,14 +24,13 @@
     "require": {
         "php": ">=5.3.3",
         "phpunit/php-token-stream": "1.*",
-        "symfony/console": "~2.1"
+        "symfony/console": "3.*"
     },
 
     "require-dev": {
         "phpmd/phpmd": "~2.0",
         "squizlabs/php_codesniffer": "~1.5",
-        "phploc/phploc": "~2.0",
-        "kherge/box": "~2.0"
+        "phploc/phploc": "~2.0"
     },
 
     "bin": [

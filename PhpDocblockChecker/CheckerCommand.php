@@ -57,6 +57,9 @@ class CheckerCommand extends Command
      */
     protected $output;
 
+    /**
+     * Configure the console command, add options, etc.
+     */
     protected function configure()
     {
         $this
@@ -70,6 +73,12 @@ class CheckerCommand extends Command
             ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.');
     }
 
+    /**
+     * Execute the actual docblock checker.
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return int
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         // Process options:
@@ -103,6 +112,10 @@ class CheckerCommand extends Command
         return count($this->report) ? 1 : 0;
     }
 
+    /**
+     * Iterate through a directory and check all of the PHP files within it.
+     * @param string $path
+     */
     protected function processDirectory($path = '')
     {
         $dir = new DirectoryIterator($this->basePath . $path);
@@ -128,6 +141,10 @@ class CheckerCommand extends Command
         }
     }
 
+    /**
+     * Check a specific PHP file for errors.
+     * @param $file
+     */
     protected function processFile($file)
     {
         $stream = new PHP_Token_Stream($this->basePath . $file);
