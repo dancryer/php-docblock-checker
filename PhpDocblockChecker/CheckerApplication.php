@@ -24,7 +24,7 @@ class CheckerApplication extends Application
      * @param InputInterface $input
      * @return string
      */
-    protected function getCommandName(InputInterface $input) : string
+    protected function getCommandName(InputInterface $input)
     {
         return 'check';
     }
