@@ -57,6 +57,9 @@ class CheckerCommand extends Command
      */
     protected $output;
 
+    /** @var int */
+    protected $passed = 0;
+
     /**
      * Configure the console command, add options, etc.
      */
@@ -70,7 +73,8 @@ class CheckerCommand extends Command
             ->addOption('skip-classes', null, InputOption::VALUE_NONE, 'Don\'t check classes for docblocks.')
             ->addOption('skip-methods', null, InputOption::VALUE_NONE, 'Don\'t check methods for docblocks.')
             ->addOption('skip-anonymous-functions', null, InputOption::VALUE_NONE, 'Don\'t check anonymous functions for docblocks.')
-            ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.');
+            ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.')
+            ->addOption('info-only', 'i', InputOption::VALUE_NONE, 'Information-only mode, just show summary.');
     }
 
     /**
@@ -89,7 +93,6 @@ class CheckerCommand extends Command
         $this->output = $output;
         $this->skipClasses = $input->getOption('skip-classes');
         $this->skipMethods = $input->getOption('skip-methods');
-        $this->skipAnonymousFunctions = $input->getOption('skip-anonymous-functions');
 
         // Set up excludes:
         if (!is_null($exclude)) {
@@ -101,8 +104,67 @@ class CheckerCommand extends Command
             $this->basePath .= '/';
         }
 
-        // Process:
-        $this->processDirectory();
+        // Get files to check:
+        $files = [];
+        $this->processDirectory('', $files);
+
+        // Check files:
+        $totalFiles = count($files);
+        $progressStep = ceil($totalFiles / 10);
+        $progressStep = $progressStep < 1 ? 1 : $progressStep;
+        $progressDot = round($progressStep / 10);
+        $progressDot = $progressDot < 1 ? 1 : $progressDot;
+
+        $i = 0;
+        $stepi = 0;
+        foreach ($files as $file) {
+            if ($this->verbose && $progressStep > 0 && $i > 0) {
+                if ($stepi % $progressDot == 0) {
+                    $this->output->write('.');
+                }
+
+                if ($i % $progressStep == 0 || $i == ($totalFiles - 1)) {
+                    $this->output->write('.  ' . $i . ' / ' . $totalFiles . ' (' . floor((100/$totalFiles) * $i) . '%)');
+                    $this->output->writeln('');
+                    $stepi = 0;
+                }
+            }
+
+            $this->processFile($file);
+
+            $i++;
+            $stepi++;
+        }
+
+        if ($this->verbose) {
+            $this->output->writeln('');
+            $this->output->writeln('');
+            $this->output->writeln($totalFiles . ' Files Checked.');
+            $this->output->writeln('<info>' . $this->passed . ' Passed</info> / <fg=red>'.count($this->report).' Errors</>');
+
+            if (count($this->report) && !$input->getOption('info-only')) {
+                $this->output->writeln('');
+                $this->output->writeln('');
+
+                foreach ($this->report as $error) {
+                    $this->output->write('<error>' . $error['file'] . ':' . $error['line'] . '</error> - ');
+
+                    if ($error['type'] == 'class') {
+                        $this->output->write('Class <info>' . $error['class'] . '</info> is missing a docblock.');
+                    }
+
+                    if ($error['type'] == 'method') {
+                        $this->output->write('Method <info>' . $error['class'] . '::' . $error['method'] . '</info> is missing a docblock.');
+                    }
+
+                    $this->output->writeln('');
+                }
+            }
+
+            $this->output->writeln('');
+        }
+
+
 
         // Output JSON if requested:
         if ($json) {
@@ -116,7 +178,7 @@ class CheckerCommand extends Command
      * Iterate through a directory and check all of the PHP files within it.
      * @param string $path
      */
-    protected function processDirectory($path = '')
+    protected function processDirectory($path = '', array &$worklist = [])
     {
         $dir = new DirectoryIterator($this->basePath . $path);
 
@@ -132,11 +194,11 @@ class CheckerCommand extends Command
             }
 
             if ($item->isFile() && $item->getExtension() == 'php') {
-                $this->processFile($itemPath);
+                $worklist[] = $itemPath;
             }
 
             if ($item->isDir()) {
-                $this->processDirectory($itemPath . '/');
+                $this->processDirectory($itemPath . '/', $worklist);
             }
         }
     }
@@ -147,25 +209,18 @@ class CheckerCommand extends Command
      */
     protected function processFile($file)
     {
+        $errors = false;
         $stream = new PHP_Token_Stream($this->basePath . $file);
 
         foreach($stream->getClasses() as $name => $class) {
-            $errors = false;
-
             if (!$this->skipClasses && is_null($class['docblock'])) {
                 $errors = true;
-
                 $this->report[] = array(
                     'type' => 'class',
                     'file' => $file,
                     'class' => $name,
                     'line' => $class['startLine'],
                 );
-
-                if ($this->verbose) {
-                    $message = $class['file'] . ': ' . $class['startLine'] . ' - Class ' . $name . ' is missing a docblock.';
-                    $this->output->writeln('<error>' . $message . '</error>');
-                }
             }
 
             if (!$this->skipMethods) {
@@ -175,12 +230,7 @@ class CheckerCommand extends Command
                     }
 
                     if (is_null($method['docblock'])) {
-                        if ($this->skipAnonymousFunctions && $methodName == 'anonymous function') {
-                            continue;
-                        }
-
                         $errors = true;
-
                         $this->report[] = array(
                             'type' => 'method',
                             'file' => $file,
@@ -188,20 +238,13 @@ class CheckerCommand extends Command
                             'method' => $methodName,
                             'line' => $method['startLine'],
                         );
-
-                        if ($this->verbose) {
-                            $message = $class['file'] . ': ' . $method['startLine'] . ' - Method '.$name.'::'.$methodName.' is missing a docblock.';
-                            $this->output->writeln('<error>' . $message . '</error>');
-                        }
                     }
                 }
             }
-
-            if (!$errors && $this->verbose) {
-                $this->output->writeln($name . ' <info>OK</info>');
-            }
         }
 
-
+        if (!$errors) {
+            $this->passed += 1;
+        }
     }
 }
