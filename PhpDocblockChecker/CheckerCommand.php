@@ -74,6 +74,7 @@ class CheckerCommand extends Command
             ->addOption('skip-methods', null, InputOption::VALUE_NONE, 'Don\'t check methods for docblocks.')
             ->addOption('skip-anonymous-functions', null, InputOption::VALUE_NONE, 'Don\'t check anonymous functions for docblocks.')
             ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.')
+            ->addOption('files-per-line', 'l', InputOption::VALUE_REQUIRED, 'Number of files per line in progress', 50)
             ->addOption('info-only', 'i', InputOption::VALUE_NONE, 'Information-only mode, just show summary.');
     }
 
@@ -109,31 +110,29 @@ class CheckerCommand extends Command
         $this->processDirectory('', $files);
 
         // Check files:
+        $filesPerLine = (int)$input->getOption('files-per-line');
         $totalFiles = count($files);
-        $progressStep = ceil($totalFiles / 10);
-        $progressStep = $progressStep < 1 ? 1 : $progressStep;
-        $progressDot = round($progressStep / 10);
-        $progressDot = $progressDot < 1 ? 1 : $progressDot;
+        $files = array_chunk($files, $filesPerLine);
+        $processed = 0;
+        $fileCountLength = strlen((string)$totalFiles);
 
-        $i = 0;
-        $stepi = 0;
-        foreach ($files as $file) {
-            if ($this->verbose && $progressStep > 0 && $i > 0) {
-                if ($stepi % $progressDot == 0) {
-                    $this->output->write('.');
-                }
+        while (count($files)) {
+            $chunk = array_shift($files);
+            $chunkFiles = count($chunk);
 
-                if ($i % $progressStep == 0 || $i == ($totalFiles - 1)) {
-                    $this->output->write('.  ' . $i . ' / ' . $totalFiles . ' (' . floor((100/$totalFiles) * $i) . '%)');
-                    $this->output->writeln('');
-                    $stepi = 0;
+            while (count($chunk)) {
+                $processed++;
+                $file = array_shift($chunk);
+
+                if ($this->processFile($file)) {
+                    $this->output->write('<info>.</info>');
+                } else {
+                    $this->output->write('<fg=red>F</>');
                 }
             }
 
-            $this->processFile($file);
-
-            $i++;
-            $stepi++;
+            $this->output->write(str_pad('', $filesPerLine - $chunkFiles));
+            $this->output->writeln('  ' . str_pad($processed, $fileCountLength, ' ', STR_PAD_LEFT) . '/' . $totalFiles . ' (' . floor((100/$totalFiles) * $processed) . '%)');
         }
 
         if ($this->verbose) {
@@ -206,6 +205,7 @@ class CheckerCommand extends Command
     /**
      * Check a specific PHP file for errors.
      * @param $file
+     * @return bool
      */
     protected function processFile($file)
     {
@@ -246,5 +246,7 @@ class CheckerCommand extends Command
         if (!$errors) {
             $this->passed += 1;
         }
+
+        return !$errors;
     }
 }
