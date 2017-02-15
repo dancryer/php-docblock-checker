@@ -129,6 +129,12 @@ class CheckerCommand extends Command
         $processed = 0;
         $fileCountLength = strlen((string)$totalFiles);
 
+        if ($this->verbose) {
+            $output->writeln('');
+            $output->writeln('PHP Docblock Checker <fg=blue>by Dan Cryer (https://www.dancryer.com)</>');
+            $output->writeln('');
+        }
+
         while (count($files)) {
             $chunk = array_shift($files);
             $chunkFiles = count($chunk);
@@ -139,17 +145,21 @@ class CheckerCommand extends Command
 
                 list($errors, $warnings) = $this->processFile($file);
 
-                if ($errors) {
-                    $this->output->write('<fg=red>F</>');
-                } elseif ($warnings) {
-                    $this->output->write('<fg=yellow>W</>');
-                } else {
-                    $this->output->write('<info>.</info>');
+                if ($this->verbose) {
+                    if ($errors) {
+                        $this->output->write('<fg=red>F</>');
+                    } elseif ($warnings) {
+                        $this->output->write('<fg=yellow>W</>');
+                    } else {
+                        $this->output->write('<info>.</info>');
+                    }
                 }
             }
 
-            $this->output->write(str_pad('', $filesPerLine - $chunkFiles));
-            $this->output->writeln('  ' . str_pad($processed, $fileCountLength, ' ', STR_PAD_LEFT) . '/' . $totalFiles . ' (' . floor((100/$totalFiles) * $processed) . '%)');
+            if ($this->verbose) {
+                $this->output->write(str_pad('', $filesPerLine - $chunkFiles));
+                $this->output->writeln('  ' . str_pad($processed, $fileCountLength, ' ', STR_PAD_LEFT) . '/' . $totalFiles . ' (' . floor((100/$totalFiles) * $processed) . '%)');
+            }
         }
 
         if ($this->verbose) {
