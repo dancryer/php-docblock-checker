@@ -19,6 +19,8 @@ if (file_exists($ownVendorAutoloader)) {
 
 require_once(dirname(__FILE__) . '/PhpDocblockChecker/CheckerApplication.php');
 require_once(dirname(__FILE__) . '/PhpDocblockChecker/CheckerCommand.php');
+require_once(dirname(__FILE__) . '/PhpDocblockChecker/FileProcessor.php');
+require_once(dirname(__FILE__) . '/PhpDocblockChecker/DocblockParser.php');
 
 $command = new PhpDocblockChecker\CheckerCommand();
 

@@ -10,6 +10,7 @@
 namespace PhpDocblockChecker;
 
 use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 
 /**
@@ -23,7 +24,7 @@ class CheckerApplication extends Application
      * @param InputInterface $input
      * @return string
      */
-    protected function getCommandName(InputInterface $input)
+    protected function getCommandName(InputInterface $input) : string
     {
         return 'check';
     }

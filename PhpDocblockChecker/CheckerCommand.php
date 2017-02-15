@@ -10,7 +10,6 @@
 namespace PhpDocblockChecker;
 
 use DirectoryIterator;
-use PHP_Token_Stream;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -35,12 +34,17 @@ class CheckerCommand extends Command
     /**
      * @var array
      */
-    protected $report = array();
+    protected $errors = [];
 
     /**
      * @var array
      */
-    protected $exclude = array();
+    protected $warnings = [];
+
+    /**
+     * @var array
+     */
+    protected $exclude = [];
 
     /**
      * @var bool
@@ -51,6 +55,11 @@ class CheckerCommand extends Command
      * @var bool
      */
     protected $skipMethods = false;
+
+    /**
+     * @var bool
+     */
+    protected $skipSignatures = false;
 
     /**
      * @var OutputInterface
@@ -72,9 +81,10 @@ class CheckerCommand extends Command
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Directory to scan.', './')
             ->addOption('skip-classes', null, InputOption::VALUE_NONE, 'Don\'t check classes for docblocks.')
             ->addOption('skip-methods', null, InputOption::VALUE_NONE, 'Don\'t check methods for docblocks.')
-            ->addOption('skip-anonymous-functions', null, InputOption::VALUE_NONE, 'Don\'t check anonymous functions for docblocks.')
+            ->addOption('skip-signatures', null, InputOption::VALUE_NONE, 'Don\'t check docblocks against method signatures.')
             ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.')
             ->addOption('files-per-line', 'l', InputOption::VALUE_REQUIRED, 'Number of files per line in progress', 50)
+            ->addOption('fail-on-warnings', 'w', InputOption::VALUE_NONE, 'Consider the check failed if any warnings are produced.')
             ->addOption('info-only', 'i', InputOption::VALUE_NONE, 'Information-only mode, just show summary.');
     }
 
@@ -94,6 +104,9 @@ class CheckerCommand extends Command
         $this->output = $output;
         $this->skipClasses = $input->getOption('skip-classes');
         $this->skipMethods = $input->getOption('skip-methods');
+        $this->skipSignatures = $input->getOption('skip-signatures');
+        $failOnWarnings = $input->getOption('fail-on-warnings');
+        $startTime = microtime(true);
 
         // Set up excludes:
         if (!is_null($exclude)) {
@@ -124,10 +137,14 @@ class CheckerCommand extends Command
                 $processed++;
                 $file = array_shift($chunk);
 
-                if ($this->processFile($file)) {
-                    $this->output->write('<info>.</info>');
-                } else {
+                list($errors, $warnings) = $this->processFile($file);
+
+                if ($errors) {
                     $this->output->write('<fg=red>F</>');
+                } elseif ($warnings) {
+                    $this->output->write('<fg=yellow>W</>');
+                } else {
+                    $this->output->write('<info>.</info>');
                 }
             }
 
@@ -136,24 +153,53 @@ class CheckerCommand extends Command
         }
 
         if ($this->verbose) {
+            $time = round(microtime(true) - $startTime, 2);
             $this->output->writeln('');
             $this->output->writeln('');
-            $this->output->writeln($totalFiles . ' Files Checked.');
-            $this->output->writeln('<info>' . $this->passed . ' Passed</info> / <fg=red>'.count($this->report).' Errors</>');
+            $this->output->writeln('Checked ' . number_format($totalFiles) . ' files in ' . $time . ' seconds.');
+            $this->output->write('<info>' . number_format($this->passed) . ' Passed</info>');
+            $this->output->write(' / <fg=red>'.number_format(count($this->errors)).' Errors</>');
+            $this->output->write(' / <fg=yellow>'.number_format(count($this->warnings)).' Warnings</>');
 
-            if (count($this->report) && !$input->getOption('info-only')) {
+            $this->output->writeln('');
+
+            if (count($this->errors) && !$input->getOption('info-only')) {
                 $this->output->writeln('');
                 $this->output->writeln('');
 
-                foreach ($this->report as $error) {
-                    $this->output->write('<error>' . $error['file'] . ':' . $error['line'] . '</error> - ');
+                foreach ($this->errors as $error) {
+                    $this->output->write('<fg=red>ERROR   </> ' . $error['file'] . ':' . $error['line'] . ' - ');
 
                     if ($error['type'] == 'class') {
                         $this->output->write('Class <info>' . $error['class'] . '</info> is missing a docblock.');
                     }
 
                     if ($error['type'] == 'method') {
-                        $this->output->write('Method <info>' . $error['class'] . '::' . $error['method'] . '</info> is missing a docblock.');
+                        $this->output->write('Method <info>' . $error['method'] . '</info> is missing a docblock.');
+                    }
+
+                    $this->output->writeln('');
+                }
+            }
+
+            if (count($this->warnings) && !$input->getOption('info-only')) {
+                foreach ($this->warnings as $error) {
+                    $this->output->write('<fg=yellow>WARNING </> ');
+
+                    if ($error['type'] == 'param-missing') {
+                        $this->output->write('<info>' . $error['method'] . '</info> - @param <fg=blue>'.$error['param'] . '</> missing.');
+                    }
+
+                    if ($error['type'] == 'param-mismatch') {
+                        $this->output->write('<info>' . $error['method'] . '</info> - @param <fg=blue>'.$error['param'] . '</> ('.$error['doc-type'].')  does not match method signature ('.$error['param-type'].').');
+                    }
+
+                    if ($error['type'] == 'return-missing') {
+                        $this->output->write('<info>' . $error['method'] . '</info> - @return missing.');
+                    }
+
+                    if ($error['type'] == 'return-mismatch') {
+                        $this->output->write('<info>' . $error['method'] . '</info> - @return <fg=blue>'.$error['doc-type'] . '</>  does not match method signature ('.$error['return-type'].').');
                     }
 
                     $this->output->writeln('');
@@ -163,19 +209,18 @@ class CheckerCommand extends Command
             $this->output->writeln('');
         }
 
-
-
         // Output JSON if requested:
         if ($json) {
-            print json_encode($this->report);
+            print json_encode(array_merge($this->errors, $this->warnings));
         }
 
-        return count($this->report) ? 1 : 0;
+        return count($this->errors) || ($failOnWarnings && count($this->warnings)) ? 1 : 0;
     }
 
     /**
      * Iterate through a directory and check all of the PHP files within it.
      * @param string $path
+     * @param string[] $worklist
      */
     protected function processDirectory($path = '', array &$worklist = [])
     {
@@ -204,40 +249,104 @@ class CheckerCommand extends Command
 
     /**
      * Check a specific PHP file for errors.
-     * @param $file
-     * @return bool
+     * @param string $file
+     * @return array
      */
     protected function processFile($file)
     {
         $errors = false;
-        $stream = new PHP_Token_Stream($this->basePath . $file);
+        $warnings = false;
+        $processor = new FileProcessor($this->basePath . $file);
 
-        foreach($stream->getClasses() as $name => $class) {
-            if (!$this->skipClasses && is_null($class['docblock'])) {
-                $errors = true;
-                $this->report[] = array(
-                    'type' => 'class',
-                    'file' => $file,
-                    'class' => $name,
-                    'line' => $class['startLine'],
-                );
+        if (!$this->skipClasses) {
+            foreach ($processor->getClasses() as $name => $class) {
+                if (is_null($class['docblock'])) {
+                    $errors = true;
+                    $this->errors[] = [
+                        'type' => 'class',
+                        'file' => $file,
+                        'class' => $name,
+                        'line' => $class['line'],
+                    ];
+                }
             }
+        }
 
-            if (!$this->skipMethods) {
-                foreach ($class['methods'] as $methodName => $method) {
-                    if ($methodName == 'anonymous function') {
-                        continue;
+        if (!$this->skipMethods) {
+            foreach ($processor->getMethods() as $name => $method) {
+                if (is_null($method['docblock'])) {
+                    $errors = true;
+                    $this->errors[] = [
+                        'type' => 'method',
+                        'file' => $file,
+                        'class' => $name,
+                        'method' => $name,
+                        'line' => $method['line'],
+                    ];
+                }
+            }
+        }
+
+        if (!$this->skipSignatures) {
+            foreach ($processor->getMethods() as $name => $method) {
+                if (count($method['params'])) {
+                    foreach ($method['params'] as $param => $type) {
+                        if (!isset($method['docblock']['params'][$param])) {
+                            $warnings = true;
+                            $this->warnings[] = [
+                                'type' => 'param-missing',
+                                'file' => $file,
+                                'class' => $name,
+                                'method' => $name,
+                                'line' => $method['line'],
+                                'param' => $param,
+                            ];
+                        } elseif (!empty($type) && $method['docblock']['params'][$param] != $type) {
+                            if ($type == 'array' && substr($method['docblock']['params'][$param], -2) == '[]') {
+                                // Do nothing because this is fine.
+                            } else {
+                                $warnings = true;
+                                $this->warnings[] = [
+                                    'type' => 'param-mismatch',
+                                    'file' => $file,
+                                    'class' => $name,
+                                    'method' => $name,
+                                    'line' => $method['line'],
+                                    'param' => $param,
+                                    'param-type' => $type,
+                                    'doc-type' => $method['docblock']['params'][$param],
+                                ];
+                            }
+                        }
                     }
+                }
 
-                    if (is_null($method['docblock'])) {
-                        $errors = true;
-                        $this->report[] = array(
-                            'type' => 'method',
+
+                if (!empty($method['return'])) {
+                    if (empty($method['docblock']['return'])) {
+                        $warnings = true;
+                        $this->warnings[] = [
+                            'type' => 'return-missing',
                             'file' => $file,
                             'class' => $name,
-                            'method' => $methodName,
-                            'line' => $method['startLine'],
-                        );
+                            'method' => $name,
+                            'line' => $method['line'],
+                        ];
+                    } elseif ($method['docblock']['return'] != $method['return']) {
+                        if ($method['return'] == 'array' && substr($method['docblock']['return'], -2) == '[]') {
+                            // Do nothing because this is fine.
+                        } else {
+                            $warnings = true;
+                            $this->warnings[] = [
+                                'type' => 'return-mismatch',
+                                'file' => $file,
+                                'class' => $name,
+                                'method' => $name,
+                                'line' => $method['line'],
+                                'return-type' => $method['return'],
+                                'doc-type' => $method['docblock']['return'],
+                            ];
+                        }
                     }
                 }
             }
@@ -247,6 +356,6 @@ class CheckerCommand extends Command
             $this->passed += 1;
         }
 
-        return !$errors;
+        return [$errors, $warnings];
     }
 }
