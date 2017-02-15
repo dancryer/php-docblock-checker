@@ -93,12 +93,25 @@ class FileProcessor
 
                     $fullMethodName = $fullClassName . '::' . (string)$method->name;
 
+                    $type = $method->returnType;
+
+                    if (!is_null($type)) {
+                        $type = (string)$type;
+                    }
+
+                    if (isset($uses[$type])) {
+                        $type = $uses[$type];
+                    }
+
+                    $type = substr($type, 0, 1) == '/' ? substr($type, 1) : $type;
+
+
                     $thisMethod = [
                         'file' => $this->file,
                         'class' => $fullClassName,
                         'name' => $fullMethodName,
                         'line' => $method->getAttribute('startLine'),
-                        'return' => is_null($method->returnType) ? null : (string)$method->returnType,
+                        'return' => $type,
                         'params' => [],
                         'docblock' => $this->getDocblock($method, $uses),
                     ];
@@ -113,6 +126,8 @@ class FileProcessor
                         if (isset($uses[$type])) {
                             $type = $uses[$type];
                         }
+
+                        $type = substr($type, 0, 1) == '/' ? substr($type, 1) : $type;
 
                         $thisMethod['params']['$'.$param->name] = $type;
                     }
@@ -168,6 +183,8 @@ class FileProcessor
                     $type = $uses[$type];
                 }
 
+                $type = substr($type, 0, 1) == '/' ? substr($type, 1) : $type;
+
                 $rtn['params'][$param['var']] = $type;
             }
         }
@@ -184,6 +201,8 @@ class FileProcessor
             if (isset($uses[$type])) {
                 $type = $uses[$type];
             }
+
+            $type = substr($type, 0, 1) == '/' ? substr($type, 1) : $type;
 
             $rtn['return'] = $type;
         }
