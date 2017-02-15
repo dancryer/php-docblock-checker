@@ -103,7 +103,7 @@ class FileProcessor
                         $type = $uses[$type];
                     }
 
-                    $type = substr($type, 0, 1) == '/' ? substr($type, 1) : $type;
+                    $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
 
                     $thisMethod = [
@@ -127,7 +127,7 @@ class FileProcessor
                             $type = $uses[$type];
                         }
 
-                        $type = substr($type, 0, 1) == '/' ? substr($type, 1) : $type;
+                        $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
                         $thisMethod['params']['$'.$param->name] = $type;
                     }
@@ -183,7 +183,7 @@ class FileProcessor
                     $type = $uses[$type];
                 }
 
-                $type = substr($type, 0, 1) == '/' ? substr($type, 1) : $type;
+                $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
                 $rtn['params'][$param['var']] = $type;
             }
@@ -202,7 +202,7 @@ class FileProcessor
                 $type = $uses[$type];
             }
 
-            $type = substr($type, 0, 1) == '/' ? substr($type, 1) : $type;
+            $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
             $rtn['return'] = $type;
         }
