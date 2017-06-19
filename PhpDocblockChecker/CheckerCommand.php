@@ -243,8 +243,19 @@ class CheckerCommand extends Command
 
             $itemPath = $path . $item->getFilename();
 
+            // exclude item explicitly
             if (in_array($itemPath, $this->exclude)) {
                 continue;
+            }
+
+            // exclude item for regex directories
+            if (!empty($this->exclude) && is_array($this->exclude)) {
+                $quoted   = array_map('preg_quote', $this->exclude);
+                $relative = '('.str_replace('\*', '.*', join('|', $quoted)).')i';
+                $absolute = '(^('.str_replace('\*', '.*', join('|', $quoted)).'))i';
+                if (preg_match($absolute, $itemPath) !== 0 || preg_match($relative, $itemPath) !== 0) {
+                    return;
+                }
             }
 
             if ($item->isFile() && $item->getExtension() == 'php') {
