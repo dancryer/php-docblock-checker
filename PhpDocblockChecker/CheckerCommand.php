@@ -79,6 +79,7 @@ class CheckerCommand extends Command
             ->setDescription('Check PHP files within a directory for appropriate use of Docblocks.')
             ->addOption('exclude', 'x', InputOption::VALUE_REQUIRED, 'Files and directories to exclude.', null)
             ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Directory to scan.', './')
+            ->addOption('file', 'f', InputOption::VALUE_REQUIRED, 'Single file to scan.', null)
             ->addOption('skip-classes', null, InputOption::VALUE_NONE, 'Don\'t check classes for docblocks.')
             ->addOption('skip-methods', null, InputOption::VALUE_NONE, 'Don\'t check methods for docblocks.')
             ->addOption('skip-signatures', null, InputOption::VALUE_NONE, 'Don\'t check docblocks against method signatures.')
@@ -113,15 +114,19 @@ class CheckerCommand extends Command
             $this->exclude = array_map('trim', explode(',', $exclude));
         }
 
-        // Check base path ends with a slash:
-        if (substr($this->basePath, -1) != '/') {
-            $this->basePath .= '/';
+        if(!is_null($input->getOption('file'))) {
+            $files= [$input->getOption('file')];
+
+        } else {
+            // Check base path ends with a slash:
+            if (substr($this->basePath, -1) != '/') {
+                $this->basePath .= '/';
+            }
+
+            // Get files to check:
+            $files = [];
+            $this->processDirectory('', $files);
         }
-
-        // Get files to check:
-        $files = [];
-        $this->processDirectory('', $files);
-
         // Check files:
         $filesPerLine = (int)$input->getOption('files-per-line');
         $totalFiles = count($files);
