@@ -129,7 +129,7 @@ class FileProcessor
 
                         $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
-                        $thisMethod['params']['$'.$param->name] = $type;
+                        $thisMethod['params']['$' . $param->var->name] = $type;
                     }
 
                     $this->methods[$fullMethodName] = $thisMethod;
