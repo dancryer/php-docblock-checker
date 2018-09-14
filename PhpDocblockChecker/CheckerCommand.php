@@ -62,6 +62,11 @@ class CheckerCommand extends Command
     protected $skipSignatures = false;
 
     /**
+     * @var bool
+     */
+    protected $fromStdin = false;
+
+    /**
      * @var OutputInterface
      */
     protected $output;
@@ -85,7 +90,8 @@ class CheckerCommand extends Command
             ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.')
             ->addOption('files-per-line', 'l', InputOption::VALUE_REQUIRED, 'Number of files per line in progress', 50)
             ->addOption('fail-on-warnings', 'w', InputOption::VALUE_NONE, 'Consider the check failed if any warnings are produced.')
-            ->addOption('info-only', 'i', InputOption::VALUE_NONE, 'Information-only mode, just show summary.');
+            ->addOption('info-only', 'i', InputOption::VALUE_NONE, 'Information-only mode, just show summary.')
+            ->addOption('from-stdin', null, InputOption::VALUE_NONE, 'Use list of files from stdin (e.g. git diff)');
     }
 
     /**
@@ -105,6 +111,7 @@ class CheckerCommand extends Command
         $this->skipClasses = $input->getOption('skip-classes');
         $this->skipMethods = $input->getOption('skip-methods');
         $this->skipSignatures = $input->getOption('skip-signatures');
+        $this->fromStdin = $input->getOption('from-stdin');
         $failOnWarnings = $input->getOption('fail-on-warnings');
         $startTime = microtime(true);
 
@@ -120,7 +127,12 @@ class CheckerCommand extends Command
 
         // Get files to check:
         $files = [];
-        $this->processDirectory('', $files);
+
+        if (!$this->fromStdin) {
+            $this->processDirectory('', $files);
+        } else {
+            $this->processStdin($files);
+        }
 
         // Check files:
         $filesPerLine = (int)$input->getOption('files-per-line');
@@ -253,6 +265,36 @@ class CheckerCommand extends Command
 
             if ($item->isDir()) {
                 $this->processDirectory($itemPath . '/', $worklist);
+            }
+        }
+    }
+
+    /**
+     * Iterate through a list of files provided via stdin and add all PHP files to the worklist.
+     * @param array &$worklist
+     * @return array
+     */
+    protected function processStdin(array &$worklist = [])
+    {
+        $files = file('php://stdin');
+
+        if (empty($files) || !is_array($files) || !count($files)) {
+            return [];
+        }
+
+        foreach ($files as $file) {
+            $file = trim($file);
+
+            if (!is_file($file)) {
+                continue;
+            }
+
+            if (in_array($file, $this->exclude)) {
+                continue;
+            }
+
+            if (substr($file, -3) == 'php') {
+                $worklist[] = $file;
             }
         }
     }

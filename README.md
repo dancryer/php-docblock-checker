@@ -13,6 +13,12 @@ composer require block8/php-docblock-checker
 call vendor/bin/phpdoccheck {params}
 </code>
 
+To validate changed files in the last git commit:
+
+<code>
+git diff --name-only HEAD HEAD^ | ./vendor/bin/phpdoccheck --from-stdin
+</code>
+
 ## Parameters
 
 Short | Long | Description
@@ -20,6 +26,7 @@ Short | Long | Description
 -h | --help | Display help message.
 -x | --exclude=EXCLUDE | Files and directories to exclude.
 -d | --directory=DIRECTORY | Directory to scan. [default: "./"]
+none | --from-stdin | Use list of files provided via stdin
 none | --skip-classes | Don't check classes for docblocks.
 none | --skip-methods | Don't check methods for docblocks.
 none | --skip-signatures | Don't check docblocks against method signatures.
