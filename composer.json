@@ -24,8 +24,8 @@
     "require": {
         "php": ">=5.3.3",
         "nikic/php-parser": "3.*",
-        "symfony/debug": "3.*",
-        "symfony/console": "3.*"
+        "symfony/debug": "~3.4",
+        "symfony/console": "~3.4"
     },
 
     "require-dev": {
