@@ -12,7 +12,7 @@ cache:
     - vendor
 
 before_script:
-  - composer install -o
+  - composer update -o
 
 script:
   - ./vendor/bin/parallel-lint -e php --exclude vendor .  # Lint all files first.
