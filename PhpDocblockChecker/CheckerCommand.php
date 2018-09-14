@@ -384,6 +384,21 @@ class CheckerCommand extends Command
                             'method' => $name,
                             'line' => $method['line'],
                         ];
+                    } elseif (is_array($method['return'])) {
+                        $docblockTypes = explode('|', $method['docblock']['return']);
+                        sort($docblockTypes);
+                        if ($method['return'] != $docblockTypes) {
+                            $warnings = true;
+                            $this->warnings[] = [
+                                'type' => 'return-mismatch',
+                                'file' => $file,
+                                'class' => $name,
+                                'method' => $name,
+                                'line' => $method['line'],
+                                'return-type' => implode('|', $method['return']),
+                                'doc-type' => $method['docblock']['return'],
+                            ];
+                        }
                     } elseif ($method['docblock']['return'] != $method['return']) {
                         if ($method['return'] == 'array' && substr($method['docblock']['return'], -2) == '[]') {
                             // Do nothing because this is fine.
