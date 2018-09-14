@@ -271,7 +271,7 @@ class CheckerCommand extends Command
 
     /**
      * Iterate through a list of files provided via stdin and add all PHP files to the worklist.
-     * @param array &$worklist
+     * @param string[] $worklist
      * @return array
      */
     protected function processStdin(array &$worklist = [])
