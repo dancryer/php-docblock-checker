@@ -33,7 +33,9 @@ class FileProcessor
             $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
             $stmts = $parser->parse(file_get_contents($file));
             $this->processStatements($stmts);
-        } catch (\Exception $ex) {}
+        } catch (\Exception $ex) {
+            // Take no action.
+        }
     }
 
     /**
