@@ -341,6 +341,11 @@ class CheckerCommand extends Command
 
         if (!$this->skipSignatures) {
             foreach ($processor->getMethods() as $name => $method) {
+                // If the docblock is inherited, we can't check for params and return types:
+                if (isset($method['docblock']['inherit']) && $method['docblock']['inherit']) {
+                    continue;
+                }
+
                 if (count($method['params'])) {
                     foreach ($method['params'] as $param => $type) {
                         if (!isset($method['docblock']['params'][$param])) {
@@ -384,6 +389,21 @@ class CheckerCommand extends Command
                             'method' => $name,
                             'line' => $method['line'],
                         ];
+                    } elseif (is_array($method['return'])) {
+                        $docblockTypes = explode('|', $method['docblock']['return']);
+                        sort($docblockTypes);
+                        if ($method['return'] != $docblockTypes) {
+                            $warnings = true;
+                            $this->warnings[] = [
+                                'type' => 'return-mismatch',
+                                'file' => $file,
+                                'class' => $name,
+                                'method' => $name,
+                                'line' => $method['line'],
+                                'return-type' => implode('|', $method['return']),
+                                'doc-type' => $method['docblock']['return'],
+                            ];
+                        }
                     } elseif ($method['docblock']['return'] != $method['return']) {
                         if ($method['return'] == 'array' && substr($method['docblock']['return'], -2) == '[]') {
                             // Do nothing because this is fine.

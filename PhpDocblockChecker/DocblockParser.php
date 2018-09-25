@@ -58,6 +58,15 @@ class DocBlockParser
     }
 
     /**
+     * Check whether or not this docblock is simply an `inheritdoc` comment.
+     * @return bool
+     */
+    public function isInheritDocComment()
+    {
+        return $this->hasTag('inheritdoc');
+    }
+
+    /**
      * Set and parse the docblock comment.
      * @param string $comment The docblock
      */

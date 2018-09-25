@@ -17,4 +17,3 @@ before_script:
 script:
   - ./vendor/bin/parallel-lint -e php --exclude vendor .  # Lint all files first.
   - ./phpdoccheck --exclude=vendor --fail-on-warnings     # Check docblocks.
-  - ./vendor/bin/phpcs --standard=PSR2 --ignore=vendor .  # Check PSR2 compliance.

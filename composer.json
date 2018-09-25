@@ -22,14 +22,13 @@
     },
 
     "require": {
-        "php": ">=5.3.3",
+        "php": ">=5.4",
         "nikic/php-parser": "3.*",
-        "symfony/console": "3.*"
+        "symfony/debug": "3.4.*",
+        "symfony/console": "3.4.*"
     },
 
     "require-dev": {
-        "squizlabs/php_codesniffer": "~1.5",
-        "phploc/phploc": "~2.0",
         "jakub-onderka/php-parallel-lint": "0.8.*"
     },
 
