@@ -358,21 +358,29 @@ class CheckerCommand extends Command
                                 'line' => $method['line'],
                                 'param' => $param,
                             ];
-                        } elseif (!empty($type) && $method['docblock']['params'][$param] != $type) {
-                            if ($type == 'array' && substr($method['docblock']['params'][$param], -2) == '[]') {
-                                // Do nothing because this is fine.
-                            } else {
-                                $warnings = true;
-                                $this->warnings[] = [
-                                    'type' => 'param-mismatch',
-                                    'file' => $file,
-                                    'class' => $name,
-                                    'method' => $name,
-                                    'line' => $method['line'],
-                                    'param' => $param,
-                                    'param-type' => $type,
-                                    'doc-type' => $method['docblock']['params'][$param],
-                                ];
+                        } elseif (!empty($type)) {
+                            $docBlockTypes = explode('|', $method['docblock']['params'][$param]);
+                            $methodTypes = explode('|', $type);
+
+                            sort($docBlockTypes);
+                            sort($methodTypes);
+
+                            if ($docBlockTypes !== $methodTypes) {
+                                if ($type == 'array' && substr($method['docblock']['params'][$param], -2) == '[]') {
+                                    // Do nothing because this is fine.
+                                } else {
+                                    $warnings = true;
+                                    $this->warnings[] = [
+                                        'type' => 'param-mismatch',
+                                        'file' => $file,
+                                        'class' => $name,
+                                        'method' => $name,
+                                        'line' => $method['line'],
+                                        'param' => $param,
+                                        'param-type' => $type,
+                                        'doc-type' => $method['docblock']['params'][$param],
+                                    ];
+                                }
                             }
                         }
                     }
