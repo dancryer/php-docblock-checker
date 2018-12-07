@@ -130,8 +130,12 @@ class FileProcessor
                     foreach ($method->params as $param) {
                         $type = $param->type;
 
-                        if (!is_null($type)) {
-                            $type = (string)$type;
+                        if (!$param->type instanceof NullableType) {
+                            if (!is_null($type)) {
+                                $type = (string)$type;
+                            }
+                        } else {
+                            $type = (string) $type->type;
                         }
 
                         if (isset($uses[$type])) {
@@ -140,7 +144,7 @@ class FileProcessor
 
                         $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
-                        if (!is_null($type) && 'null' === $param->default->name->parts[0]) {
+                        if (!is_null($type) && ('null' === $param->default->name->parts[0] || $param->type instanceof NullableType)) {
                             $type = $type . '|null';
                         }
 
