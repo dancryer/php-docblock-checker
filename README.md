@@ -19,6 +19,11 @@ To validate changed files in the last git commit:
 git diff --name-only HEAD HEAD^ | ./vendor/bin/phpdoccheck --from-stdin
 </code>
 
+If used within a travis context, this may be useful:
+<code>
+git diff --name-only ${TRAVIS_COMMIT_RANGE:-"HEAD^"} | ./vendor/bin/phpdoccheck --from-stdin
+</code>
+
 ## Parameters
 
 Short | Long | Description
