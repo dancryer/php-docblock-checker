@@ -125,6 +125,7 @@ class FileProcessor
                         'return' => $type,
                         'params' => [],
                         'docblock' => $this->getDocblock($method, $uses),
+                        'has_return' => isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false,
                     ];
 
                     foreach ($method->params as $param) {
@@ -144,7 +145,7 @@ class FileProcessor
 
                         $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
-                        if (!is_null($type) && ('null' === $param->default->name->parts[0] || $param->type instanceof NullableType)) {
+                        if ((isset($param->default->name->parts) && !is_null($type) && ('null' === $param->default->name->parts[0]) || $param->type instanceof NullableType)) {
                             $type = $type . '|null';
                         }
 
@@ -155,6 +156,30 @@ class FileProcessor
                 }
             }
         }
+    }
+
+    /**
+     * Recursively search an array of statements for a return statement.
+     * @param array $statements
+     * @return bool
+     */
+    protected function statementsContainReturn(array $statements)
+    {
+        foreach ($statements as $statement) {
+            if ($statement instanceof Stmt\Return_) {
+                return true;
+            }
+
+            if (empty($statement->stmts)) {
+                continue;
+            }
+
+            if ($this->statementsContainReturn($statement->stmts)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -31,10 +31,12 @@ Short | Long | Description
 -h | --help | Display help message.
 -x | --exclude=EXCLUDE | Files and directories to exclude.
 -d | --directory=DIRECTORY | Directory to scan. [default: "./"]
+none | --cache-file=FILE | Use cache file to speed up processing.
 none | --from-stdin | Use list of files provided via stdin
 none | --skip-classes | Don't check classes for docblocks.
 none | --skip-methods | Don't check methods for docblocks.
 none | --skip-signatures | Don't check docblocks against method signatures.
+none | --only-signatures | Only check methods that have parameters or returns.
 -j | --json | Output JSON instead of a log.
 -l | --files-per-line=FILES-PER-LINE | Number of files per line in progress [default: 50]
 -w | --fail-on-warnings | Consider the check failed if any warnings are produced.

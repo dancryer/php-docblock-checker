@@ -44,6 +44,11 @@ class CheckerCommand extends Command
     /**
      * @var array
      */
+    protected $infos = [];
+
+    /**
+     * @var array
+     */
     protected $exclude = [];
 
     /**
@@ -64,7 +69,22 @@ class CheckerCommand extends Command
     /**
      * @var bool
      */
+    protected $onlySignatures = false;
+
+    /**
+     * @var bool
+     */
     protected $fromStdin = false;
+
+    /**
+     * @var string
+     */
+    protected $cacheFile;
+
+    /**
+     * @var array
+     */
+    protected $cache;
 
     /**
      * @var OutputInterface
@@ -87,11 +107,13 @@ class CheckerCommand extends Command
             ->addOption('skip-classes', null, InputOption::VALUE_NONE, 'Don\'t check classes for docblocks.')
             ->addOption('skip-methods', null, InputOption::VALUE_NONE, 'Don\'t check methods for docblocks.')
             ->addOption('skip-signatures', null, InputOption::VALUE_NONE, 'Don\'t check docblocks against method signatures.')
+            ->addOption('only-signatures', null, InputOption::VALUE_NONE, 'Ignore missing docblocks where method doesn\'t have parameters or return type.')
             ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.')
             ->addOption('files-per-line', 'l', InputOption::VALUE_REQUIRED, 'Number of files per line in progress', 50)
             ->addOption('fail-on-warnings', 'w', InputOption::VALUE_NONE, 'Consider the check failed if any warnings are produced.')
             ->addOption('info-only', 'i', InputOption::VALUE_NONE, 'Information-only mode, just show summary.')
-            ->addOption('from-stdin', null, InputOption::VALUE_NONE, 'Use list of files from stdin (e.g. git diff)');
+            ->addOption('from-stdin', null, InputOption::VALUE_NONE, 'Use list of files from stdin (e.g. git diff)')
+            ->addOption('cache-file', null, InputOption::VALUE_REQUIRED, 'Cache analysis of files based on filemtime.');
     }
 
     /**
@@ -111,7 +133,9 @@ class CheckerCommand extends Command
         $this->skipClasses = $input->getOption('skip-classes');
         $this->skipMethods = $input->getOption('skip-methods');
         $this->skipSignatures = $input->getOption('skip-signatures');
+        $this->onlySignatures = $input->getOption('only-signatures');
         $this->fromStdin = $input->getOption('from-stdin');
+        $this->cacheFile = $input->getOption('cache-file');
         $failOnWarnings = $input->getOption('fail-on-warnings');
         $startTime = microtime(true);
 
@@ -123,6 +147,16 @@ class CheckerCommand extends Command
         // Check base path ends with a slash:
         if (substr($this->basePath, -1) != '/') {
             $this->basePath .= '/';
+        }
+
+        // Fix conflicting options:
+        if ($this->onlySignatures) {
+            $this->skipSignatures = false;
+        }
+
+        // Load cache from file if set:
+        if (!empty($this->cacheFile) && file_exists($this->cacheFile)) {
+            $this->cache = json_decode(file_get_contents($this->cacheFile), true);
         }
 
         // Get files to check:
@@ -182,6 +216,7 @@ class CheckerCommand extends Command
             $this->output->write('<info>' . number_format($this->passed) . ' Passed</info>');
             $this->output->write(' / <fg=red>'.number_format(count($this->errors)).' Errors</>');
             $this->output->write(' / <fg=yellow>'.number_format(count($this->warnings)).' Warnings</>');
+            $this->output->write(' / <fg=blue>'.number_format(count($this->infos)).' Info</>');
 
             $this->output->writeln('');
 
@@ -198,6 +233,25 @@ class CheckerCommand extends Command
 
                     if ($error['type'] == 'method') {
                         $this->output->write('Method <info>' . $error['method'] . '</info> is missing a docblock.');
+                    }
+
+                    $this->output->writeln('');
+                }
+            }
+
+            if (count($this->infos) && !$input->getOption('info-only')) {
+                $this->output->writeln('');
+                $this->output->writeln('');
+
+                foreach ($this->infos as $info) {
+                    $this->output->write('<fg=blue>INFO   </> ' . $info['file'] . ':' . $info['line'] . ' - ');
+
+                    if ($info['type'] == 'class') {
+                        $this->output->write('Class <info>' . $info['class'] . '</info> is missing a docblock.');
+                    }
+
+                    if ($info['type'] == 'method') {
+                        $this->output->write('Method <info>' . $info['method'] . '</info> is missing a docblock.');
                     }
 
                     $this->output->writeln('');
@@ -234,6 +288,12 @@ class CheckerCommand extends Command
         // Output JSON if requested:
         if ($json) {
             print json_encode(array_merge($this->errors, $this->warnings));
+        }
+
+
+        // Write to cache file:
+        if (!empty($this->cacheFile)) {
+            @file_put_contents($this->cacheFile, json_encode($this->cache));
         }
 
         return count($this->errors) || ($failOnWarnings && count($this->warnings)) ? 1 : 0;
@@ -301,22 +361,36 @@ class CheckerCommand extends Command
 
     /**
      * Check a specific PHP file for errors.
-     * @param string $file
+     * @param string $fileName
      * @return array
      */
-    protected function processFile($file)
+    protected function processFile($fileName)
     {
         $errors = false;
         $warnings = false;
-        $processor = new FileProcessor($this->basePath . $file);
+        $fullPath = $this->basePath . $fileName;
+
+        if (empty($this->cache[$fullPath]) || filemtime($fullPath) > $this->cache[$fullPath]['mtime']) {
+            $processor = new FileProcessor($fullPath);
+
+            $file = [];
+            $file['mtime'] = filemtime($fullPath);
+            $file['classes'] = $processor->getClasses();
+            $file['methods'] = $processor->getMethods();
+
+            $this->cache[$fullPath] = $file;
+
+        }
+
+        $file = $this->cache[$fullPath];
 
         if (!$this->skipClasses) {
-            foreach ($processor->getClasses() as $name => $class) {
+            foreach ($file['classes'] as $name => $class) {
                 if (is_null($class['docblock'])) {
                     $errors = true;
                     $this->errors[] = [
                         'type' => 'class',
-                        'file' => $file,
+                        'file' => $fileName,
                         'class' => $name,
                         'line' => $class['line'],
                     ];
@@ -325,22 +399,41 @@ class CheckerCommand extends Command
         }
 
         if (!$this->skipMethods) {
-            foreach ($processor->getMethods() as $name => $method) {
+            foreach ($file['methods'] as $name => $method) {
+                $treatAsError = true;
+
+                if ($this->onlySignatures) {
+                    if ((empty($method['params']) || 0 === count($method['params'])) && false === $method['has_return']) {
+                        $treatAsError = false;
+                    }
+                }
+
                 if (is_null($method['docblock'])) {
-                    $errors = true;
-                    $this->errors[] = [
-                        'type' => 'method',
-                        'file' => $file,
-                        'class' => $name,
-                        'method' => $name,
-                        'line' => $method['line'],
-                    ];
+                    if (true === $treatAsError) {
+                        $errors = true;
+
+                        $this->errors[] = [
+                            'type' => 'method',
+                            'file' => $fileName,
+                            'class' => $name,
+                            'method' => $name,
+                            'line' => $method['line'],
+                        ];
+                    } else {
+                        $this->infos[] = [
+                            'type' => 'method',
+                            'file' => $fileName,
+                            'class' => $name,
+                            'method' => $name,
+                            'line' => $method['line'],
+                        ];
+                    }
                 }
             }
         }
 
         if (!$this->skipSignatures) {
-            foreach ($processor->getMethods() as $name => $method) {
+            foreach ($file['methods'] as $name => $method) {
                 // If the docblock is inherited, we can't check for params and return types:
                 if (isset($method['docblock']['inherit']) && $method['docblock']['inherit']) {
                     continue;
@@ -352,7 +445,7 @@ class CheckerCommand extends Command
                             $warnings = true;
                             $this->warnings[] = [
                                 'type' => 'param-missing',
-                                'file' => $file,
+                                'file' => $fileName,
                                 'class' => $name,
                                 'method' => $name,
                                 'line' => $method['line'],
@@ -372,7 +465,7 @@ class CheckerCommand extends Command
                                     $warnings = true;
                                     $this->warnings[] = [
                                         'type' => 'param-mismatch',
-                                        'file' => $file,
+                                        'file' => $fileName,
                                         'class' => $name,
                                         'method' => $name,
                                         'line' => $method['line'],
@@ -392,7 +485,7 @@ class CheckerCommand extends Command
                         $warnings = true;
                         $this->warnings[] = [
                             'type' => 'return-missing',
-                            'file' => $file,
+                            'file' => $fileName,
                             'class' => $name,
                             'method' => $name,
                             'line' => $method['line'],
@@ -404,7 +497,7 @@ class CheckerCommand extends Command
                             $warnings = true;
                             $this->warnings[] = [
                                 'type' => 'return-mismatch',
-                                'file' => $file,
+                                'file' => $fileName,
                                 'class' => $name,
                                 'method' => $name,
                                 'line' => $method['line'],
@@ -419,7 +512,7 @@ class CheckerCommand extends Command
                             $warnings = true;
                             $this->warnings[] = [
                                 'type' => 'return-mismatch',
-                                'file' => $file,
+                                'file' => $fileName,
                                 'class' => $name,
                                 'method' => $name,
                                 'line' => $method['line'],
