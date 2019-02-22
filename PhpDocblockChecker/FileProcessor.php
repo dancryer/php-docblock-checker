@@ -145,6 +145,7 @@ class FileProcessor
 
                         $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
+
                         if ((isset($param->default->name->parts) && !is_null($type) && ('null' === $param->default->name->parts[0]) || $param->type instanceof NullableType)) {
                             $type = $type . '|null';
                         }
