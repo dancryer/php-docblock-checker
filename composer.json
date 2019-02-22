@@ -23,7 +23,7 @@
 
     "require": {
         "php": ">=5.4",
-        "nikic/php-parser": "3.*",
+        "nikic/php-parser": "3.*|4.*",
         "symfony/console": "3.4.*|4.*"
     },
 
