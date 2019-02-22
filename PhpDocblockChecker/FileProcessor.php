@@ -74,7 +74,13 @@ class FileProcessor
 
             if ($statement instanceof Use_) {
                 foreach ($statement->uses as $use) {
-                    $uses[$use->alias] = (string)$use->name;
+                    // polyfill
+                    $alias = $use->alias;
+                    if (null === $alias && method_exists($use, 'getAlias')) {
+                        $alias = $use->getAlias();
+                    }
+
+                    $uses[(string) $alias] = (string)$use->name;
                 }
             }
 
@@ -145,12 +151,16 @@ class FileProcessor
 
                         $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
-
                         if ((isset($param->default->name->parts) && !is_null($type) && ('null' === $param->default->name->parts[0]) || $param->type instanceof NullableType)) {
                             $type = $type . '|null';
                         }
 
-                        $thisMethod['params']['$'.$param->name] = $type;
+                        $name = $param->name;
+                        if (null === $name) {
+                            $name = $param->var->name;
+                        }
+
+                        $thisMethod['params']['$'.$name] = $type;
                     }
 
                     $this->methods[$fullMethodName] = $thisMethod;
