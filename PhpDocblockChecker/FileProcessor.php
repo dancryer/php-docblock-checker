@@ -155,8 +155,13 @@ class FileProcessor
                             $type = $type . '|null';
                         }
 
-                        $name = $param->name;
-                        if (null === $name) {
+                        $name = null;
+                        // parser v3
+                        if (property_exists($param, 'name')) {
+                            $name = $param->name;
+                        }
+                        // parser v4
+                        if (null === $name && property_exists($param, 'var')) {
                             $name = $param->var->name;
                         }
 
