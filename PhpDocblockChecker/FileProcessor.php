@@ -10,7 +10,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Use_;
-use PhpParser\ParserFactory;
+use PhpParser\Parser;
 
 /**
  * Uses Nikic/PhpParser to parse PHP files and find relevant information for the checker.
@@ -25,13 +25,13 @@ class FileProcessor
     /**
      * Load and parse a PHP file.
      * @param string $file
+     * @param Parser $parser
      */
-    public function __construct($file)
+    public function __construct($file, Parser $parser)
     {
         $this->file = $file;
 
         try {
-            $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
             $stmts = $parser->parse(file_get_contents($file));
             $this->processStatements($stmts);
         } catch (\Exception $ex) {

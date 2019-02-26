@@ -10,6 +10,8 @@
 namespace PhpDocblockChecker;
 
 use DirectoryIterator;
+use PhpParser\Parser;
+use PhpParser\ParserFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -94,6 +96,10 @@ class CheckerCommand extends Command
     /** @var int */
     protected $passed = 0;
 
+    /** @var Parser */
+    protected $parser;
+
+
     /**
      * Configure the console command, add options, etc.
      */
@@ -136,6 +142,7 @@ class CheckerCommand extends Command
         $this->onlySignatures = $input->getOption('only-signatures');
         $this->fromStdin = $input->getOption('from-stdin');
         $this->cacheFile = $input->getOption('cache-file');
+        $this->parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
         $failOnWarnings = $input->getOption('fail-on-warnings');
         $startTime = microtime(true);
 
@@ -371,15 +378,15 @@ class CheckerCommand extends Command
         $fullPath = $this->basePath . $fileName;
 
         if (empty($this->cache[$fullPath]) || filemtime($fullPath) > $this->cache[$fullPath]['mtime']) {
-            $processor = new FileProcessor($fullPath);
+            $processor = new FileProcessor($fullPath, $this->parser);
 
-            $file = [];
-            $file['mtime'] = filemtime($fullPath);
-            $file['classes'] = $processor->getClasses();
-            $file['methods'] = $processor->getMethods();
+            $this->cache[$fullPath] = [
+                'mtime' => filemtime($fullPath),
+                'classes' => $processor->getClasses(),
+                'methods' => $processor->getMethods(),
+            ];
 
-            $this->cache[$fullPath] = $file;
-
+            unset($processor);
         }
 
         $file = $this->cache[$fullPath];
