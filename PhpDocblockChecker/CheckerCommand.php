@@ -322,7 +322,7 @@ class CheckerCommand extends Command
 
             $itemPath = $path . $item->getFilename();
 
-            if (in_array($itemPath, $this->exclude)) {
+            if($this->isFileExcluded($itemPath)){
                 continue;
             }
 
@@ -356,7 +356,7 @@ class CheckerCommand extends Command
                 continue;
             }
 
-            if (in_array($file, $this->exclude)) {
+            if($this->isFileExcluded($file)){
                 continue;
             }
 
@@ -364,6 +364,24 @@ class CheckerCommand extends Command
                 $worklist[] = $file;
             }
         }
+    }
+
+    /**
+     * @param $file
+     * @return bool
+     */
+    private function isFileExcluded($file) {
+        if (in_array($file, $this->exclude)) {
+            return true;
+        }
+
+        foreach ($this->exclude as $pattern) {
+            if (fnmatch($pattern, $file)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
