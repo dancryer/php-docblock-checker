@@ -10,7 +10,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Use_;
-use PhpParser\ParserFactory;
+use PhpParser\Parser;
 
 /**
  * Uses Nikic/PhpParser to parse PHP files and find relevant information for the checker.
@@ -25,13 +25,13 @@ class FileProcessor
     /**
      * Load and parse a PHP file.
      * @param string $file
+     * @param Parser $parser
      */
-    public function __construct($file)
+    public function __construct($file, Parser $parser)
     {
         $this->file = $file;
 
         try {
-            $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
             $stmts = $parser->parse(file_get_contents($file));
             $this->processStatements($stmts);
         } catch (\Exception $ex) {
@@ -74,7 +74,13 @@ class FileProcessor
 
             if ($statement instanceof Use_) {
                 foreach ($statement->uses as $use) {
-                    $uses[$use->alias] = (string)$use->name;
+                    // polyfill
+                    $alias = $use->alias;
+                    if (null === $alias && method_exists($use, 'getAlias')) {
+                        $alias = $use->getAlias();
+                    }
+
+                    $uses[(string) $alias] = (string)$use->name;
                 }
             }
 
@@ -125,6 +131,7 @@ class FileProcessor
                         'return' => $type,
                         'params' => [],
                         'docblock' => $this->getDocblock($method, $uses),
+                        'has_return' => isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false,
                     ];
 
                     foreach ($method->params as $param) {
@@ -144,17 +151,51 @@ class FileProcessor
 
                         $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
 
-                        if (!is_null($type) && ('null' === $param->default->name->parts[0] || $param->type instanceof NullableType)) {
+                        if ((isset($param->default->name->parts) && !is_null($type) && ('null' === $param->default->name->parts[0]) || $param->type instanceof NullableType)) {
                             $type = $type . '|null';
                         }
 
-                        $thisMethod['params']['$'.$param->name] = $type;
+                        $name = null;
+                        // parser v3
+                        if (property_exists($param, 'name')) {
+                            $name = $param->name;
+                        }
+                        // parser v4
+                        if (null === $name && property_exists($param, 'var')) {
+                            $name = $param->var->name;
+                        }
+
+                        $thisMethod['params']['$'.$name] = $type;
                     }
 
                     $this->methods[$fullMethodName] = $thisMethod;
                 }
             }
         }
+    }
+
+    /**
+     * Recursively search an array of statements for a return statement.
+     * @param array $statements
+     * @return bool
+     */
+    protected function statementsContainReturn(array $statements)
+    {
+        foreach ($statements as $statement) {
+            if ($statement instanceof Stmt\Return_) {
+                return true;
+            }
+
+            if (empty($statement->stmts)) {
+                continue;
+            }
+
+            if ($this->statementsContainReturn($statement->stmts)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

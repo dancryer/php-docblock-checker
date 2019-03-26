@@ -1,5 +1,5 @@
 {
-    "name"             : "block8/php-docblock-checker",
+    "name"             : "dancryer/php-docblock-checker",
     "description"      : "A simple tool for checking that your PHP classes and methods use docblocks.",
     "minimum-stability": "stable",
     "type"             : "library",
@@ -17,15 +17,14 @@
     ],
 
     "support": {
-        "issues": "https://github.com/Block8/php-docblock-checker/issues",
-        "source": "https://github.com/Block8/php-docblock-checker"
+        "issues": "https://github.com/dancryer/php-docblock-checker/issues",
+        "source": "https://github.com/dancryer/php-docblock-checker"
     },
 
     "require": {
         "php": ">=5.4",
-        "nikic/php-parser": "3.*",
-        "symfony/debug": "3.4.*",
-        "symfony/console": "3.4.*"
+        "nikic/php-parser": "3.*|4.*",
+        "symfony/console": "3.4.*|4.*"
     },
 
     "require-dev": {
