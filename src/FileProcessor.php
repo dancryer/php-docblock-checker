@@ -1,8 +1,7 @@
 <?php
 
-namespace PhpDocblockChecker;
+namespace PhpDocBlockChecker;
 
-use PhpDocblockChecker\DocBlockParser;
 use PhpParser\Comment\Doc;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt;
@@ -14,7 +13,7 @@ use PhpParser\Parser;
 
 /**
  * Uses Nikic/PhpParser to parse PHP files and find relevant information for the checker.
- * @package PhpDocblockChecker
+ * @package PhpDocBlockChecker
  */
 class FileProcessor
 {
@@ -227,7 +226,7 @@ class FileProcessor
      */
     protected function processDocblock($text, array $uses = [])
     {
-        $parser = new DocBlockParser($text);
+        $parser = new DocblockParser($text);
 
         if ($parser->isInheritDocComment()) {
             return ['inherit' => true];

@@ -1,0 +1,10 @@
+directory: src
+files-per-line: 10
+cache-file: .phpdoccheck
+options:
+  - skip-classes
+  - skip-methods
+  - skip-signatures
+  - only-signatures
+  - fail-on-warnings
+  - info-only
