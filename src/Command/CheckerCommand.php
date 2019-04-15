@@ -292,19 +292,30 @@ class CheckerCommand extends Command
                     $this->output->write('<fg=yellow>WARNING </> ');
 
                     if ($error['type'] === 'param-missing') {
-                        $this->output->write('<info>' . $error['method'] . '</info> - @param <fg=blue>' . $error['param'] . '</> missing.');
+                        $this->output->write(
+                            '<info>' . $error['method'] . '</info> - @param <fg=blue>' .
+                            $error['param'] . '</> missing.'
+                        );
                     }
 
                     if ($error['type'] === 'param-mismatch') {
-                        $this->output->write('<info>' . $error['method'] . '</info> - @param <fg=blue>' . $error['param'] . '</> (' . $error['doc-type'] . ')  does not match method signature (' . $error['param-type'] . ').');
+                        $this->output->write(
+                            '<info>' . $error['method'] . '</info> - @param <fg=blue>' . $error['param'] .
+                            '</> (' . $error['doc-type'] . ')  does not match method signature (' . $error['param-type'] . ').'
+                        );
                     }
 
                     if ($error['type'] === 'return-missing') {
-                        $this->output->write('<info>' . $error['method'] . '</info> - @return missing.');
+                        $this->output->write(
+                            '<info>' . $error['method'] . '</info> - @return missing.'
+                        );
                     }
 
                     if ($error['type'] === 'return-mismatch') {
-                        $this->output->write('<info>' . $error['method'] . '</info> - @return <fg=blue>' . $error['doc-type'] . '</>  does not match method signature (' . $error['return-type'] . ').');
+                        $this->output->write(
+                            '<info>' . $error['method'] . '</info> - @return <fg=blue>' .
+                            $error['doc-type'] . '</>  does not match method signature (' . $error['return-type'] . ').'
+                        );
                     }
 
                     $this->output->writeln('');
