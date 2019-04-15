@@ -301,7 +301,8 @@ class CheckerCommand extends Command
                     if ($error['type'] === 'param-mismatch') {
                         $this->output->write(
                             '<info>' . $error['method'] . '</info> - @param <fg=blue>' . $error['param'] .
-                            '</> (' . $error['doc-type'] . ')  does not match method signature (' . $error['param-type'] . ').'
+                            '</> (' . $error['doc-type'] . ')  does not match method signature (' .
+                            $error['param-type'] . ').'
                         );
                     }
 
@@ -461,7 +462,8 @@ class CheckerCommand extends Command
                 $treatAsError = true;
 
                 if ($this->config->isOnlySignatures()) {
-                    if ((empty($method['params']) || 0 === count($method['params'])) && false === $method['has_return']) {
+                    if ((empty($method['params']) || 0 === count($method['params'])) &&
+                        false === $method['has_return']) {
                         $treatAsError = false;
                     }
                 }
