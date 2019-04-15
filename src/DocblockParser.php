@@ -16,10 +16,10 @@ class DocblockParser
      *
      * @type array
      */
-    public static $vectors = array(
-        'param' => array('type', 'var', 'desc'),
-        'return' => array('type', 'desc'),
-    );
+    public static $vectors = [
+        'param' => ['type', 'var', 'desc'],
+        'return' => ['type', 'desc'],
+    ];
 
     /**
      * The description of the symbol
@@ -53,8 +53,9 @@ class DocblockParser
      */
     public function __construct($comment = null)
     {
-        if ($comment)
+        if ($comment) {
             $this->setComment($comment);
+        }
     }
 
     /**
@@ -81,7 +82,7 @@ class DocblockParser
 
     /**
      * Parse the comment into the component parts and set the state of the object.
-     * @param  string $comment The docblock
+     * @param string $comment The docblock
      */
     protected function parseComment($comment)
     {
@@ -89,22 +90,24 @@ class DocblockParser
         $comment = substr($comment, 3, -2);
 
         // Split into arrays of lines
-        $comment = preg_split('/\r?\n\r?/', $comment);
+        $commentLines = preg_split('/\r?\n\r?/', $comment);
+        if ($commentLines === false) {
+            return;
+        }
 
         // Trim asterisks and whitespace from the beginning and whitespace from the end of lines
-        $comment = array_map(function($line) {
+        $commentLines = array_map(function ($line) {
             return ltrim(rtrim($line), "* \t\n\r\0\x0B");
-        }, $comment);
+        }, $commentLines);
 
         // Group the lines together by @tags
         $blocks = array();
         $b = -1;
-        foreach ($comment as $line)
-        {
+        foreach ($commentLines as $line) {
             if (self::isTagged($line)) {
                 $b++;
                 $blocks[] = array();
-            } else if($b == -1) {
+            } else if ($b === -1) {
                 $b = 0;
                 $blocks[] = array();
             }
@@ -112,49 +115,49 @@ class DocblockParser
         }
 
         // Parse the blocks
-        foreach ($blocks as $block => $body)
-        {
+        foreach ($blocks as $block => $body) {
             $body = trim(implode("\n", $body));
 
-            if ($block == 0 && !self::isTagged($body))
-            {
+            if ($block === 0 && !self::isTagged($body)) {
                 // This is the description block
                 $this->desc = $body;
                 continue;
             }
-            else
-            {
-                // This block is tagged
-                $tag = substr(self::strTag($body), 1);
-                $body = ltrim(substr($body, strlen($tag)+2));
 
-                if (isset(self::$vectors[$tag])) {
-                    // The tagged block is a vector
-                    $count = count(self::$vectors[$tag]);
-                    if ($body) {
-                        $parts = preg_split('/\s+/', $body, $count);
-                    } else {
-                        $parts = array();
-                    }
-                    // Default the trailing values
-                    $parts = array_pad($parts, $count, null);
-                    // Store as a mapped array
-                    $this->tags[$tag][] = array_combine(
-                        self::$vectors[$tag],
-                        $parts
-                    );
+            $tagstr = self::strTag($body);
+            if ($tagstr === null) {
+                continue;
+            }
+
+            // This block is tagged
+            $tag = substr($tagstr, 1);
+            $body = ltrim(substr($body, strlen($tag) + 2));
+
+            if (isset(self::$vectors[$tag])) {
+                // The tagged block is a vector
+                $count = count(self::$vectors[$tag]);
+                $parts = $body ? preg_split('/\s+/', $body, $count) : [];
+                if (!is_array($parts)) {
+                    continue;
                 }
-                else {
-                    // The tagged block is only text
-                    $this->tags[$tag][] = $body;
-                }
+
+                // Default the trailing values
+                $parts = array_pad($parts, $count, null);
+                // Store as a mapped array
+                $this->tags[$tag][] = array_combine(
+                    self::$vectors[$tag],
+                    $parts
+                );
+            } else {
+                // The tagged block is only text
+                $this->tags[$tag][] = $body;
             }
         }
     }
 
     /**
      * Whether or not a docblock contains a given @tag.
-     * @param  string $tag The name of the @tag to check for
+     * @param string $tag The name of the @tag to check for
      * @return bool
      */
     public function hasTag($tag)
@@ -164,7 +167,7 @@ class DocblockParser
 
     /**
      * The value of a tag
-     * @param  String $tag
+     * @param String $tag
      * @return array
      */
     public function tag($tag)
@@ -174,9 +177,9 @@ class DocblockParser
 
     /**
      * The value of a tag (concatenated for multiple values)
-     * @param  string $tag
-     * @param  string $sep The seperator for concatenating
-     * @return string
+     * @param string $tag
+     * @param string $sep The seperator for concatenating
+     * @return string|null
      */
     public function tagImplode($tag, $sep = ' ')
     {
@@ -185,8 +188,8 @@ class DocblockParser
 
     /**
      * The value of a tag (merged recursively)
-     * @param  string $tag
-     * @return array
+     * @param string $tag
+     * @return array|null
      */
     public function tagMerge($tag)
     {
@@ -199,7 +202,7 @@ class DocblockParser
 
     /**
      * Whether or not a string begins with a @tag
-     * @param  string $str
+     * @param string $str
      * @return bool
      */
     public static function isTagged($str)
@@ -209,13 +212,14 @@ class DocblockParser
 
     /**
      * The tag at the beginning of a string
-     * @param  string $str
+     * @param string $str
      * @return string|null
      */
     public static function strTag($str)
     {
-        if (preg_match('/^@[a-z0-9_]+/', $str, $matches))
+        if (preg_match('/^@[a-z0-9_]+/', $str, $matches)) {
             return $matches[0];
+        }
         return null;
     }
 }

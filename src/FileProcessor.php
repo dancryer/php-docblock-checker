@@ -3,7 +3,10 @@
 namespace PhpDocBlockChecker;
 
 use PhpParser\Comment\Doc;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
+use PhpParser\Node\Param;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
@@ -31,7 +34,15 @@ class FileProcessor
         $this->file = $file;
 
         try {
-            $stmts = $parser->parse(file_get_contents($file));
+            $contents = file_get_contents($file);
+            if ($contents === false) {
+                return;
+            }
+            $stmts = $parser->parse($contents);
+
+            if ($stmts === null) {
+                return;
+            }
             $this->processStatements($stmts);
         } catch (\Exception $ex) {
             // Take no action.
@@ -79,13 +90,13 @@ class FileProcessor
                         $alias = $use->getAlias();
                     }
 
-                    $uses[(string) $alias] = (string)$use->name;
+                    $uses[(string)$alias] = (string)$use->name;
                 }
             }
 
             if ($statement instanceof Class_) {
                 $class = $statement;
-                $fullClassName = $prefix . '\\' . (string)$class->name;
+                $fullClassName = $prefix . '\\' . $class->name;
 
                 $this->classes[$fullClassName] = [
                     'file' => $this->file,
@@ -95,27 +106,27 @@ class FileProcessor
                 ];
 
                 foreach ($statement->stmts as $method) {
-                    if (!($method instanceof ClassMethod)) {
+                    if (!$method instanceof ClassMethod) {
                         continue;
                     }
 
-                    $fullMethodName = $fullClassName . '::' . (string)$method->name;
+                    $fullMethodName = $fullClassName . '::' . $method->name;
 
                     $type = $method->returnType;
 
-                    if (!$method->returnType instanceof NullableType) {
-                        if (!is_null($type)) {
-                            $type = (string)$type;
-                        }
-                    } else {
-                        $type = (string) $type->type;
+                    if ($type instanceof NullableType) {
+                        $type = $type->type->toString();
+                    } else if ($type !== null) {
+                        $type = $type->toString();
                     }
 
                     if (isset($uses[$type])) {
                         $type = $uses[$type];
                     }
 
-                    $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
+                    if ($type !== null) {
+                        $type = strpos($type, '\\') === 0 ? substr($type, 1) : $type;
+                    }
 
                     if ($method->returnType instanceof NullableType) {
                         $type = ['null', $type];
@@ -133,25 +144,32 @@ class FileProcessor
                         'has_return' => isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false,
                     ];
 
+                    /** @var Param $param */
                     foreach ($method->params as $param) {
                         $type = $param->type;
 
-                        if (!$param->type instanceof NullableType) {
-                            if (!is_null($type)) {
-                                $type = (string)$type;
-                            }
-                        } else {
-                            $type = (string) $type->type;
+                        if ($type instanceof NullableType) {
+                            $type = $type->type->toString();
+                        } else if ($type !== null) {
+                            $type = $type->toString();
                         }
 
                         if (isset($uses[$type])) {
                             $type = $uses[$type];
                         }
 
-                        $type = substr($type, 0, 1) == '\\' ? substr($type, 1) : $type;
+                        if ($type !== null) {
+                            $type = strpos($type, '\\') === 0 ? substr($type, 1) : $type;
+                        }
 
-                        if ((isset($param->default->name->parts) && !is_null($type) && ('null' === $param->default->name->parts[0]) || $param->type instanceof NullableType)) {
-                            $type = $type . '|null';
+                        if (property_exists($param, 'default') &&
+                            $param->default instanceof Expr &&
+                            property_exists($param->default, 'name') &&
+                            property_exists($param->default->name, 'parts') &&
+                            $type !== null &&
+                            'null' === $param->default->name->parts[0]
+                        ) {
+                            $type .= '|null';
                         }
 
                         $name = null;
@@ -160,11 +178,11 @@ class FileProcessor
                             $name = $param->name;
                         }
                         // parser v4
-                        if (null === $name && property_exists($param, 'var')) {
+                        if (null === $name && property_exists($param, 'var') && property_exists($param->var, 'name')) {
                             $name = $param->var->name;
                         }
 
-                        $thisMethod['params']['$'.$name] = $type;
+                        $thisMethod['params']['$' . $name] = $type;
                     }
 
                     $this->methods[$fullMethodName] = $thisMethod;
@@ -236,11 +254,7 @@ class FileProcessor
 
         if (isset($parser->tags['param'])) {
             foreach ($parser->tags['param'] as $param) {
-                $type = $param['type'];
-
-                if (!is_null($type)) {
-                    $type = (string)$type;
-                }
+                $type = (string)$param['type'];
 
                 $types = [];
                 foreach (explode('|', $type) as $tmpType) {
@@ -248,7 +262,7 @@ class FileProcessor
                         $tmpType = $uses[$tmpType];
                     }
 
-                    $types[] = substr($tmpType, 0, 1) == '\\' ? substr($tmpType, 1) : $tmpType;
+                    $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
                 }
 
                 $rtn['params'][$param['var']] = implode('|', $types);
@@ -260,17 +274,14 @@ class FileProcessor
 
             $type = $return['type'];
 
-            if (!is_null($type)) {
-                $type = (string)$type;
-            }
-
             $types = [];
+            /** @var string $tmpType */
             foreach (explode('|', $type) as $tmpType) {
                 if (isset($uses[$tmpType])) {
                     $tmpType = $uses[$tmpType];
                 }
 
-                $types[] = substr($tmpType, 0, 1) == '\\' ? substr($tmpType, 1) : $tmpType;
+                $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
             }
 
             $rtn['return'] = implode('|', $types);
