@@ -6,93 +6,107 @@ use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Yaml\Yaml;
 
-class ConfigParser {
-   const DEFAULT_CONFIG_FILE = 'phpdoccheck.yml';
-   /**
-    * @var InputInterface
-    */
-   private $input;
-   /**
-    * @var array
-    */
-   private $fileConfig;
-   private $definition;
+/**
+ * Class ConfigParser
+ * @package PhpDocBlockChecker\Config
+ */
+class ConfigParser
+{
+    const DEFAULT_CONFIG_FILE = 'phpdoccheck.yml';
+    /**
+     * @var InputInterface
+     */
+    private $input;
+    /**
+     * @var array
+     */
+    private $fileConfig;
+    private $definition;
 
-   /**
-    * OptionProcessor constructor.
-    * @param InputInterface $input
-    * @param InputDefinition $definition
-    */
-   public function __construct(InputInterface $input, InputDefinition $definition) {
-      $this->input = $input;
-      $this->definition = $definition;
+    /**
+     * OptionProcessor constructor.
+     * @param InputInterface $input
+     * @param InputDefinition $definition
+     */
+    public function __construct(InputInterface $input, InputDefinition $definition)
+    {
+        $this->input = $input;
+        $this->definition = $definition;
 
-      $inputConfigFile = $input->getOption('config-file');
+        $inputConfigFile = $input->getOption('config-file');
 
-      $configFile = $inputConfigFile !== null ?
-         $inputConfigFile :
-         getcwd() . '/' . self::DEFAULT_CONFIG_FILE;
+        if (is_array($inputConfigFile)) {
+            $inputConfigFile = reset($inputConfigFile);
+        }
 
-      $this->fileConfig = $this->parseConfigFile($configFile);
-   }
+        $configFile = $inputConfigFile !== null ?
+            (string)$inputConfigFile :
+            getcwd() . '/' . self::DEFAULT_CONFIG_FILE;
 
-   /**
-    * If the option is set in either the command line or config file, return true
-    *
-    * @param string $optionName
-    * @return bool
-    */
-   public function parseOption($optionName) {
-      return $this->input->getOption($optionName) || isset($this->fileConfig['options'][$optionName]);
-   }
+        $this->fileConfig = $this->parseConfigFile($configFile);
+    }
 
-   /**
-    * @param string $parameterName
-    * @return mixed
-    */
-   public function parseParameter($parameterName) {
-      $defaultValue = $this->definition->getOption($parameterName)->getDefault();
-      $inputValue = $this->input->getOption($parameterName);
+    /**
+     * If the option is set in either the command line or config file, return true
+     *
+     * @param string $optionName
+     * @return bool
+     */
+    public function parseOption($optionName)
+    {
+        return $this->input->getOption($optionName) || isset($this->fileConfig['options'][$optionName]);
+    }
 
-      if ($inputValue !== $defaultValue) {
-         return $inputValue;
-      }
+    /**
+     * @param string $parameterName
+     * @return mixed
+     */
+    public function parseParameter($parameterName)
+    {
+        $defaultValue = $this->definition->getOption($parameterName)->getDefault();
+        $inputValue = $this->input->getOption($parameterName);
 
-      $fileValue = $this->getFileValue($parameterName);
+        if ($inputValue !== $defaultValue) {
+            return $inputValue;
+        }
 
-      if ($fileValue !== null) {
-         return $fileValue;
-      }
+        $fileValue = $this->getFileValue($parameterName);
 
-      return $defaultValue;
-   }
+        if ($fileValue !== null) {
+            return $fileValue;
+        }
 
-   /**
-    * @param string $parameterName
-    * @return mixed|null
-    */
-   private function getFileValue($parameterName) {
-      if (isset($this->fileConfig[$parameterName])) {
-         return $this->fileConfig[$parameterName];
-      }
-      return null;
-   }
+        return $defaultValue;
+    }
 
-   /**
-    * @param string $configFile
-    * @return array
-    */
-   private function parseConfigFile($configFile) {
-      if ($configFile === null || !file_exists($configFile)) {
-         return ['options' => []];
-      }
+    /**
+     * @param string $parameterName
+     * @return mixed|null
+     */
+    private function getFileValue($parameterName)
+    {
+        if (isset($this->fileConfig[$parameterName])) {
+            return $this->fileConfig[$parameterName];
+        }
+        return null;
+    }
 
-      $config = Yaml::parseFile($configFile);
+    /**
+     * @param string $configFile
+     * @return array
+     */
+    private function parseConfigFile($configFile)
+    {
+        if (!file_exists($configFile)) {
+            return ['options' => []];
+        }
 
-      if (isset($config['options'])) {
-         $config['options'] = array_flip($config['options']);
-      }
+        $config = Yaml::parseFile($configFile);
 
-      return $config;
-   }
+        if (isset($config['options'])) {
+            $config['options'] = array_flip($config['options']);
+        }
+
+        return $config;
+    }
 }
