@@ -1,13 +1,13 @@
 <?php
 
-namespace PhpDocblockChecker;
+namespace PhpDocBlockChecker;
 
 /**
  * Parse the docblock of a function or method
  * @author Paul Scott <paul@duedil.com>
  * {@link http://www.github.com/icio/PHP-DocBlock-Parser}
  */
-class DocBlockParser
+class DocblockParser
 {
     /**
      * Tags in the docblock that have a whitepace-delimited number of parameters
