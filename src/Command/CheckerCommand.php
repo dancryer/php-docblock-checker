@@ -76,19 +76,86 @@ class CheckerCommand extends Command
         $this
             ->setName('check')
             ->setDescription('Check PHP files within a directory for appropriate use of Docblocks.')
-            ->addOption('exclude', 'x', InputOption::VALUE_REQUIRED, 'Files and directories to exclude.', null)
-            ->addOption('directory', 'd', InputOption::VALUE_REQUIRED, 'Directory to scan.', './')
-            ->addOption('skip-classes', null, InputOption::VALUE_NONE, 'Don\'t check classes for docblocks.')
-            ->addOption('skip-methods', null, InputOption::VALUE_NONE, 'Don\'t check methods for docblocks.')
-            ->addOption('skip-signatures', null, InputOption::VALUE_NONE, 'Don\'t check docblocks against method signatures.')
-            ->addOption('only-signatures', null, InputOption::VALUE_NONE, 'Ignore missing docblocks where method doesn\'t have parameters or return type.')
-            ->addOption('json', 'j', InputOption::VALUE_NONE, 'Output JSON instead of a log.')
-            ->addOption('files-per-line', 'l', InputOption::VALUE_REQUIRED, 'Number of files per line in progress', 50)
-            ->addOption('fail-on-warnings', 'w', InputOption::VALUE_NONE, 'Consider the check failed if any warnings are produced.')
-            ->addOption('info-only', 'i', InputOption::VALUE_NONE, 'Information-only mode, just show summary.')
-            ->addOption('from-stdin', null, InputOption::VALUE_NONE, 'Use list of files from stdin (e.g. git diff)')
-            ->addOption('cache-file', null, InputOption::VALUE_REQUIRED, 'Cache analysis of files based on filemtime.')
-            ->addOption('config-file', null, InputOption::VALUE_REQUIRED, 'File to read doccheck config from in yml format');
+            ->addOption(
+                'exclude',
+                'x',
+                InputOption::VALUE_REQUIRED,
+                'Files and directories to exclude.'
+            )
+            ->addOption(
+                'directory',
+                'd',
+                InputOption::VALUE_REQUIRED,
+                'Directory to scan.',
+                './'
+            )
+            ->addOption(
+                'skip-classes',
+                null,
+                InputOption::VALUE_NONE,
+                'Don\'t check classes for docblocks.'
+            )
+            ->addOption(
+                'skip-methods',
+                null,
+                InputOption::VALUE_NONE,
+                'Don\'t check methods for docblocks.'
+            )
+            ->addOption(
+                'skip-signatures',
+                null,
+                InputOption::VALUE_NONE,
+                'Don\'t check docblocks against method signatures.'
+            )
+            ->addOption(
+                'only-signatures',
+                null,
+                InputOption::VALUE_NONE,
+                'Ignore missing docblocks where method doesn\'t have parameters or return type.'
+            )
+            ->addOption(
+                'json',
+                'j',
+                InputOption::VALUE_NONE,
+                'Output JSON instead of a log.'
+            )
+            ->addOption(
+                'files-per-line',
+                'l',
+                InputOption::VALUE_REQUIRED,
+                'Number of files per line in progress',
+                50
+            )
+            ->addOption(
+                'fail-on-warnings',
+                'w',
+                InputOption::VALUE_NONE,
+                'Consider the check failed if any warnings are produced.'
+            )
+            ->addOption(
+                'info-only',
+                'i',
+                InputOption::VALUE_NONE,
+                'Information-only mode, just show summary.'
+            )
+            ->addOption(
+                'from-stdin',
+                null,
+                InputOption::VALUE_NONE,
+                'Use list of files from stdin (e.g. git diff)'
+            )
+            ->addOption(
+                'cache-file',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Cache analysis of files based on filemtime.'
+            )
+            ->addOption(
+                'config-file',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'File to read doccheck config from in yml format'
+            );
     }
 
     /**
