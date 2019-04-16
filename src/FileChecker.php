@@ -37,7 +37,7 @@ class FileChecker
     }
 
     /**
-     * @param $fileName
+     * @param string $fileName
      * @return FileInfo
      */
     private function getFile($fileName)

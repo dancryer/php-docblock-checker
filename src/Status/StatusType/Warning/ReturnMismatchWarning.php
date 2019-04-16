@@ -21,7 +21,7 @@ class ReturnMismatchWarning extends Warning
      * ReturnMismatchWarning constructor.
      * @param string $file
      * @param string $class
-     * @param string $line
+     * @param int $line
      * @param string $method
      * @param string $returnType
      * @param string $docType

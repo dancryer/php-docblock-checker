@@ -44,22 +44,22 @@ class ReturnCheck extends Check
                         );
                         continue;
                     }
+                }
 
-                    if ($method['docblock']['return'] !== $method['return']) {
-                        if ($method['return'] === 'array' && substr($method['docblock']['return'], -2) === '[]') {
-                            // Do nothing because this is fine.
-                        } else {
-                            $this->fileStatus->add(
-                                new ReturnMismatchWarning(
-                                    $file->getFileName(),
-                                    $name,
-                                    $method['line'],
-                                    $name,
-                                    $method['return'],
-                                    $method['docblock']['return']
-                                )
-                            );
-                        }
+                if ($method['docblock']['return'] !== $method['return']) {
+                    if ($method['return'] === 'array' && substr($method['docblock']['return'], -2) === '[]') {
+                        // Do nothing because this is fine.
+                    } else {
+                        $this->fileStatus->add(
+                            new ReturnMismatchWarning(
+                                $file->getFileName(),
+                                $name,
+                                $method['line'],
+                                $name,
+                                $method['return'],
+                                $method['docblock']['return']
+                            )
+                        );
                     }
                 }
             }

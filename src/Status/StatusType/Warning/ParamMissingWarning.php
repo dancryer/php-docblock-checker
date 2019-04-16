@@ -57,6 +57,7 @@ class ParamMissingWarning extends Warning
      */
     public function getDecoratedMessage()
     {
-        return parent::getDecoratedMessage() . '<info>' . $this->method . '</info> - @param <fg=blue>' . $this->param . '</> missing.';
+        return parent::getDecoratedMessage() . '<info>' . $this->method .
+            '</info> - @param <fg=blue>' . $this->param . '</> missing.';
     }
 }

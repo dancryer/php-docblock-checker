@@ -119,7 +119,7 @@ class StatusCollection
     }
 
     /**
-     * @return int|void
+     * @return int
      */
     public function getTotalPassed()
     {

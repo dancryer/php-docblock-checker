@@ -243,6 +243,8 @@ class CheckerCommand extends Command
             print json_encode(array_merge($statusCollection->getErrors(), $statusCollection->getWarnings()));
         }
 
-        return $statusCollection->hasErrors() || ($config->isFailOnWarnings() && $statusCollection->hasWarnings()) ? 1 : 0;
+        return $statusCollection->hasErrors() ||
+        ($config->isFailOnWarnings() && $statusCollection->hasWarnings()) ?
+            1 : 0;
     }
 }
