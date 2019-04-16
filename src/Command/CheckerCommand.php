@@ -13,6 +13,14 @@ use DirectoryIterator;
 use PhpDocBlockChecker\Config\Config;
 use PhpDocBlockChecker\Config\ConfigParser;
 use PhpDocBlockChecker\Config\ConfigProcessor;
+use PhpDocBlockChecker\DocblockParser\DocblockParser;
+use PhpDocBlockChecker\FileChecker;
+use PhpDocBlockChecker\FileInfoCacheProvider;
+use PhpDocBlockChecker\FileParser\FileParser;
+use PhpDocBlockChecker\FileProvider\FileProviderFactory;
+use PhpDocBlockChecker\Status\StatusCollection;
+use PhpDocBlockChecker\Status\StatusType\Error\ClassError;
+use PhpDocBlockChecker\Status\StatusType\Error\MethodError;
 use PhpDocBlockChecker\FileProcessor;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;
@@ -27,46 +35,10 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class CheckerCommand extends Command
 {
-
-    /**
-     * @var array
-     */
-    protected $errors = [];
-
-    /**
-     * @var array
-     */
-    protected $warnings = [];
-
-    /**
-     * @var array
-     */
-    protected $infos = [];
-
     /**
      * @var array
      */
     protected $cache;
-
-    /**
-     * @var OutputInterface
-     */
-    protected $output;
-
-    /**
-     * @var int
-     */
-    protected $passed = 0;
-
-    /**
-     * @var Parser
-     */
-    protected $parser;
-
-    /**
-     * @var Config
-     */
-    private $config;
 
     /**
      * Configure the console command, add options, etc.
@@ -168,36 +140,30 @@ class CheckerCommand extends Command
     {
         $startTime = microtime(true);
 
-        $this->output = $output;
-        $this->parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
-        $this->config = (new ConfigProcessor(new ConfigParser($input, $this->getDefinition())))->processConfig();
+        $config = (new ConfigProcessor(new ConfigParser($input, $this->getDefinition())))->processConfig();
 
-        $cacheFile = $this->config->getCacheFile();
-        // Load cache from file if set:
-        if (!empty($cacheFile) && file_exists($cacheFile)) {
-            $contents = file_get_contents($cacheFile);
-            if ($contents !== false) {
-                $this->cache = json_decode($contents, true);
-            }
-        }
 
         // Get files to check:
-        $files = [];
-
-        if ($this->config->isFromStdin()) {
-            $this->processStdin($files);
-        } else {
-            $this->processDirectory('', $files);
-        }
+        $files = FileProviderFactory::getFileProvider($config)->getFiles();
 
         // Check files:
-        $filesPerLine = $this->config->getFilesPerLine();
+        $filesPerLine = $config->getFilesPerLine();
         $totalFiles = count($files);
         $files = array_chunk($files, $filesPerLine);
         $processed = 0;
-        $fileCountLength = strlen((string)$totalFiles);
 
-        if ($this->config->isVerbose()) {
+        $fileChecker = new FileChecker(
+            new FileInfoCacheProvider($config->getCacheFile()),
+            new FileParser(
+                (new ParserFactory())->create(ParserFactory::PREFER_PHP7),
+                new DocblockParser()
+            ),
+            new Checker($config)
+        );
+
+        $statusCollection = new StatusCollection();
+
+        if ($config->isVerbose()) {
             $output->writeln('');
             $output->writeln('PHP Docblock Checker <fg=blue>by Dan Cryer (https://www.dancryer.com)</>');
             $output->writeln('');
@@ -211,25 +177,26 @@ class CheckerCommand extends Command
                 $processed++;
                 $file = array_shift($chunk);
 
-                list($errors, $warnings) = $this->processFile($file);
+                $status = $fileChecker->checkFile($file);
+                $statusCollection->addFileStatus($status);
 
-                if ($this->config->isVerbose()) {
-                    if ($errors) {
-                        $this->output->write('<fg=red>F</>');
-                    } elseif ($warnings) {
-                        $this->output->write('<fg=yellow>W</>');
+                if ($config->isVerbose()) {
+                    if ($status->hasErrors()) {
+                        $output->write('<fg=red>F</>');
+                    } elseif ($status->hasWarnings()) {
+                        $output->write('<fg=yellow>W</>');
                     } else {
-                        $this->output->write('<info>.</info>');
+                        $output->write('<info>.</info>');
                     }
                 }
             }
 
-            if ($this->config->isVerbose()) {
-                $this->output->writeln(
+            if ($config->isVerbose()) {
+                $output->writeln(
                     sprintf(
                         '%s %s/%d (%d%%)',
                         str_pad('', $filesPerLine - $chunkFiles),
-                        str_pad((string)$processed, $fileCountLength, ' ', STR_PAD_LEFT),
+                        str_pad((string)$processed, strlen((string)$totalFiles), ' ', STR_PAD_LEFT),
                         $totalFiles,
                         floor((100 / $totalFiles) * $processed)
                     )
@@ -237,357 +204,55 @@ class CheckerCommand extends Command
             }
         }
 
-        if ($this->config->isVerbose()) {
+
+        if ($config->isVerbose()) {
             $time = round(microtime(true) - $startTime, 2);
-            $this->output->writeln('');
-            $this->output->writeln('');
-            $this->output->writeln('Checked ' . number_format($totalFiles) . ' files in ' . $time . ' seconds.');
-            $this->output->write('<info>' . number_format($this->passed) . ' Passed</info>');
-            $this->output->write(' / <fg=red>' . number_format(count($this->errors)) . ' Errors</>');
-            $this->output->write(' / <fg=yellow>' . number_format(count($this->warnings)) . ' Warnings</>');
-            $this->output->write(' / <fg=blue>' . number_format(count($this->infos)) . ' Info</>');
+            $output->writeln('');
+            $output->writeln('');
+            $output->writeln('Checked ' . number_format($totalFiles) . ' files in ' . $time . ' seconds.');
+            $output->write('<info>' . number_format($statusCollection->getTotalPassed()) . ' Passed</info>');
+            $output->write(' / <fg=red>' . number_format($statusCollection->getTotalErrors()) . ' Errors</>');
+            $output->write(' / <fg=yellow>' . number_format($statusCollection->getTotalWarnings()) . ' Warnings</>');
+            $output->write(' / <fg=blue>' . number_format($statusCollection->getTotalInfos()) . ' Info</>');
+            $output->writeln('');
 
-            $this->output->writeln('');
+            if ($statusCollection->hasErrors() && !$config->isInfoOnly()) {
+                $output->writeln('');
+                $output->writeln('');
 
-            if (count($this->errors) && !$this->config->isInfoOnly()) {
-                $this->output->writeln('');
-                $this->output->writeln('');
-
-                foreach ($this->errors as $error) {
-                    $this->output->write('<fg=red>ERROR   </> ' . $error['file'] . ':' . $error['line'] . ' - ');
-
-                    if ($error['type'] === 'class') {
-                        $this->output->write('Class <info>' . $error['class'] . '</info> is missing a docblock.');
-                    }
-
-                    if ($error['type'] === 'method') {
-                        $this->output->write('Method <info>' . $error['method'] . '</info> is missing a docblock.');
-                    }
-
-                    $this->output->writeln('');
+                foreach ($statusCollection->getErrors() as $warning) {
+                    $output->writeln($warning->getDecoratedMessage());
                 }
             }
 
-            if (count($this->infos) && !$this->config->isInfoOnly()) {
-                $this->output->writeln('');
-                $this->output->writeln('');
+            if ($statusCollection->hasInfos() && !$config->isInfoOnly()) {
+                $output->writeln('');
+                $output->writeln('');
 
-                foreach ($this->infos as $info) {
-                    $this->output->write('<fg=blue>INFO   </> ' . $info['file'] . ':' . $info['line'] . ' - ');
-
-                    if ($info['type'] === 'class') {
-                        $this->output->write('Class <info>' . $info['class'] . '</info> is missing a docblock.');
-                    }
-
-                    if ($info['type'] === 'method') {
-                        $this->output->write('Method <info>' . $info['method'] . '</info> is missing a docblock.');
-                    }
-
-                    $this->output->writeln('');
+                foreach ($statusCollection->getInfos() as $info) {
+                    $output->writeln($info->getDecoratedMessage());
                 }
             }
 
-            if (count($this->warnings) && !$this->config->isInfoOnly()) {
-                foreach ($this->warnings as $error) {
-                    $this->output->write('<fg=yellow>WARNING </> ');
+            if ($statusCollection->hasWarnings() && !$config->isInfoOnly()) {
+                $output->writeln('');
+                $output->writeln('');
 
-                    if ($error['type'] === 'param-missing') {
-                        $this->output->write(
-                            '<info>' . $error['method'] . '</info> - @param <fg=blue>' .
-                            $error['param'] . '</> missing.'
-                        );
-                    }
-
-                    if ($error['type'] === 'param-mismatch') {
-                        $this->output->write(
-                            '<info>' . $error['method'] . '</info> - @param <fg=blue>' . $error['param'] .
-                            '</> (' . $error['doc-type'] . ')  does not match method signature (' .
-                            $error['param-type'] . ').'
-                        );
-                    }
-
-                    if ($error['type'] === 'return-missing') {
-                        $this->output->write(
-                            '<info>' . $error['method'] . '</info> - @return missing.'
-                        );
-                    }
-
-                    if ($error['type'] === 'return-mismatch') {
-                        $this->output->write(
-                            '<info>' . $error['method'] . '</info> - @return <fg=blue>' .
-                            $error['doc-type'] . '</>  does not match method signature (' . $error['return-type'] . ').'
-                        );
-                    }
-
-                    $this->output->writeln('');
+                foreach ($statusCollection->getWarnings() as $warning) {
+                    $output->writeln($warning->getDecoratedMessage());
                 }
             }
 
-            $this->output->writeln('');
+            $output->writeln('');
         }
 
         // Output JSON if requested:
-        if ($this->config->isJson()) {
-            print json_encode(array_merge($this->errors, $this->warnings));
+        if ($config->isJson()) {
+            print json_encode(array_merge($statusCollection->getErrors(), $statusCollection->getWarnings()));
         }
 
-        // Write to cache file:
-        if (!empty($cacheFile)) {
-            @file_put_contents($cacheFile, json_encode($this->cache));
-        }
-
-        return count($this->errors) || ($this->config->isFailOnWarnings() && count($this->warnings)) ? 1 : 0;
-    }
-
-    /**
-     * Iterate through a directory and check all of the PHP files within it.
-     * @param string $path
-     * @param string[] $worklist
-     */
-    protected function processDirectory($path = '', array &$worklist = [])
-    {
-        $dir = new DirectoryIterator($this->config->getDirectory() . $path);
-
-        foreach ($dir as $item) {
-            if ($item->isDot()) {
-                continue;
-            }
-
-            $itemPath = $path . $item->getFilename();
-
-            if ($this->isFileExcluded($itemPath)) {
-                continue;
-            }
-
-            if ($item->isFile() && $item->getExtension() === 'php') {
-                $worklist[] = $itemPath;
-            }
-
-            if ($item->isDir()) {
-                $this->processDirectory($itemPath . '/', $worklist);
-            }
-        }
-    }
-
-    /**
-     * Iterate through a list of files provided via stdin and add all PHP files to the worklist.
-     * @param string[] $worklist
-     * @return array
-     */
-    protected function processStdin(array &$worklist = [])
-    {
-        $files = file('php://stdin');
-
-        if (empty($files) || !is_array($files) || !count($files)) {
-            return [];
-        }
-
-        foreach ($files as $file) {
-            $file = trim($file);
-
-            if (!is_file($file)) {
-                continue;
-            }
-
-            if ($this->isFileExcluded($file)) {
-                continue;
-            }
-
-            if (substr($file, -3) === 'php') {
-                $worklist[] = $file;
-            }
-        }
-    }
-
-    /**
-     * @param string $file
-     * @return bool
-     */
-    private function isFileExcluded($file)
-    {
-        if (in_array($file, $this->config->getExclude(), true)) {
-            return true;
-        }
-
-        foreach ($this->config->getExclude() as $pattern) {
-            if (fnmatch($pattern, $file)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Check a specific PHP file for errors.
-     * @param string $fileName
-     * @return array
-     */
-    protected function processFile($fileName)
-    {
-        $errors = false;
-        $warnings = false;
-        $fullPath = $this->config->getDirectory() . $fileName;
-
-        if (empty($this->cache[$fullPath]) || filemtime($fullPath) > $this->cache[$fullPath]['mtime']) {
-            $processor = new FileProcessor($fullPath, $this->parser);
-
-            $this->cache[$fullPath] = [
-                'mtime' => filemtime($fullPath),
-                'classes' => $processor->getClasses(),
-                'methods' => $processor->getMethods(),
-            ];
-
-            unset($processor);
-        }
-
-        $file = $this->cache[$fullPath];
-
-        if (!$this->config->isSkipClasses()) {
-            foreach ($file['classes'] as $name => $class) {
-                if ($class['docblock'] === null) {
-                    $errors = true;
-                    $this->errors[] = [
-                        'type' => 'class',
-                        'file' => $fileName,
-                        'class' => $name,
-                        'line' => $class['line'],
-                    ];
-                }
-            }
-        }
-
-        if (!$this->config->isSkipMethods()) {
-            foreach ($file['methods'] as $name => $method) {
-                $treatAsError = true;
-
-                if ($this->config->isOnlySignatures()) {
-                    if ((empty($method['params']) || 0 === count($method['params'])) &&
-                        false === $method['has_return']) {
-                        $treatAsError = false;
-                    }
-                }
-
-                if ($method['docblock'] === null) {
-                    if (true === $treatAsError) {
-                        $errors = true;
-
-                        $this->errors[] = [
-                            'type' => 'method',
-                            'file' => $fileName,
-                            'class' => $name,
-                            'method' => $name,
-                            'line' => $method['line'],
-                        ];
-                    } else {
-                        $this->infos[] = [
-                            'type' => 'method',
-                            'file' => $fileName,
-                            'class' => $name,
-                            'method' => $name,
-                            'line' => $method['line'],
-                        ];
-                    }
-                }
-            }
-        }
-
-        if (!$this->config->isSkipSignatures()) {
-            foreach ($file['methods'] as $name => $method) {
-                // If the docblock is inherited, we can't check for params and return types:
-                if (isset($method['docblock']['inherit']) && $method['docblock']['inherit']) {
-                    continue;
-                }
-
-                if (count($method['params'])) {
-                    foreach ($method['params'] as $param => $type) {
-                        if (!isset($method['docblock']['params'][$param])) {
-                            $warnings = true;
-                            $this->warnings[] = [
-                                'type' => 'param-missing',
-                                'file' => $fileName,
-                                'class' => $name,
-                                'method' => $name,
-                                'line' => $method['line'],
-                                'param' => $param,
-                            ];
-                        } elseif (!empty($type)) {
-                            $docBlockTypes = explode('|', $method['docblock']['params'][$param]);
-                            $methodTypes = explode('|', $type);
-
-                            sort($docBlockTypes);
-                            sort($methodTypes);
-
-                            if ($docBlockTypes !== $methodTypes) {
-                                if ($type === 'array' && substr($method['docblock']['params'][$param], -2) === '[]') {
-                                    // Do nothing because this is fine.
-                                } else {
-                                    $warnings = true;
-                                    $this->warnings[] = [
-                                        'type' => 'param-mismatch',
-                                        'file' => $fileName,
-                                        'class' => $name,
-                                        'method' => $name,
-                                        'line' => $method['line'],
-                                        'param' => $param,
-                                        'param-type' => $type,
-                                        'doc-type' => $method['docblock']['params'][$param],
-                                    ];
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (!empty($method['return'])) {
-                    if (empty($method['docblock']['return'])) {
-                        $warnings = true;
-                        $this->warnings[] = [
-                            'type' => 'return-missing',
-                            'file' => $fileName,
-                            'class' => $name,
-                            'method' => $name,
-                            'line' => $method['line'],
-                        ];
-                    } elseif (is_array($method['return'])) {
-                        $docblockTypes = explode('|', $method['docblock']['return']);
-                        sort($docblockTypes);
-                        if ($method['return'] !== $docblockTypes) {
-                            $warnings = true;
-                            $this->warnings[] = [
-                                'type' => 'return-mismatch',
-                                'file' => $fileName,
-                                'class' => $name,
-                                'method' => $name,
-                                'line' => $method['line'],
-                                'return-type' => implode('|', $method['return']),
-                                'doc-type' => $method['docblock']['return'],
-                            ];
-                        }
-                    } elseif ($method['docblock']['return'] !== $method['return']) {
-                        if ($method['return'] === 'array' && substr($method['docblock']['return'], -2) === '[]') {
-                            // Do nothing because this is fine.
-                        } else {
-                            $warnings = true;
-                            $this->warnings[] = [
-                                'type' => 'return-mismatch',
-                                'file' => $fileName,
-                                'class' => $name,
-                                'method' => $name,
-                                'line' => $method['line'],
-                                'return-type' => $method['return'],
-                                'doc-type' => $method['docblock']['return'],
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!$errors) {
-            $this->passed++;
-        }
-
-        return [$errors, $warnings];
+        return $statusCollection->hasErrors() ||
+        ($config->isFailOnWarnings() && $statusCollection->hasWarnings()) ?
+            1 : 0;
     }
 }
