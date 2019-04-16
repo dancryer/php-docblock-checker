@@ -1,5 +1,4 @@
 directory: src
-files-per-line: 10
 cache-file: .phpdoccheck
 options:
   - skip-classes

@@ -207,7 +207,7 @@ class DocblockParser
      */
     public static function isTagged($str)
     {
-        return isset($str[1]) && $str[0] == '@' && ctype_alpha($str[1]);
+        return isset($str[1]) && strpos($str, '@') === 0 && ctype_alpha($str[1]);
     }
 
     /**
