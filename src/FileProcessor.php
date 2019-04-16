@@ -2,9 +2,9 @@
 
 namespace PhpDocBlockChecker;
 
+use Exception;
 use PhpParser\Comment\Doc;
 use PhpParser\Node\Expr;
-use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
 use PhpParser\Node\Stmt;
@@ -44,7 +44,7 @@ class FileProcessor
                 return;
             }
             $this->processStatements($stmts);
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             // Take no action.
         }
     }

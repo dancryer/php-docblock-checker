@@ -2,7 +2,10 @@
 
 namespace PhpDocBlockChecker\FileProvider;
 
-use DirectoryIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RecursiveRegexIterator;
+use RegexIterator;
 
 class DirectoryFileProvider extends FileProvider
 {
@@ -23,7 +26,6 @@ class DirectoryFileProvider extends FileProvider
     }
 
     /**
-     * @param string $path
      * @return string[]
      */
     public function getFiles()
@@ -31,34 +33,19 @@ class DirectoryFileProvider extends FileProvider
         $directory = new RecursiveDirectoryIterator($this->directory);
         $iterator = new RecursiveIteratorIterator($directory);
         $regex = new RegexIterator($iterator, '/^.+\.php$/i', RecursiveRegexIterator::GET_MATCH);
-
-        foreach ($regex as $x) {
-
-        }
-
-        $dir = new DirectoryIterator($this->directory . $path);
         $worklist = [];
 
-        foreach ($dir as $item) {
-            if ($item->isDot()) {
+        foreach ($regex as $match) {
+            if (!isset($match[0])) {
                 continue;
             }
+            $file = $match[0];
 
-            $itemPath = $path . $item->getFilename();
-
-            if ($this->isFileExcluded($itemPath)) {
-                continue;
-            }
-
-            if ($item->isFile() && $item->getExtension() === 'php') {
-                $worklist[] = $itemPath;
-            }
-
-            if ($item->isDir()) {
-                $worklist = array_merge($worklist, $this->getFiles($itemPath . '/', $worklist));
+            if (!$this->isFileExcluded(str_replace($this->directory, '', $file))) {
+                $worklist[] = $file;
             }
         }
 
-        return $worklist
+        return $worklist;
     }
 }
