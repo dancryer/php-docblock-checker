@@ -9,18 +9,17 @@
 
 namespace PhpDocBlockChecker\Command;
 
-use DirectoryIterator;
-use PhpDocBlockChecker\Config\Config;
+use PhpDocBlockChecker\Check\Checker;
 use PhpDocBlockChecker\Config\ConfigParser;
 use PhpDocBlockChecker\Config\ConfigProcessor;
-use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpDocBlockChecker\FileChecker;
 use PhpDocBlockChecker\FileInfoCacheProvider;
-use PhpDocBlockChecker\FileParser\FileParser;
 use PhpDocBlockChecker\FileProvider\FileProviderFactory;
 use PhpDocBlockChecker\Status\StatusCollection;
 use PhpDocBlockChecker\Status\StatusType\Error\ClassError;
 use PhpDocBlockChecker\Status\StatusType\Error\MethodError;
+use PhpDocBlockChecker\DocblockParser\DocblockParser;
+use PhpDocBlockChecker\FileParser\FileParser;
 use PhpDocBlockChecker\FileProcessor;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;

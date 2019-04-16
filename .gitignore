@@ -2,3 +2,7 @@
 .idea
 vendor
 phpdoccheck.phar
+.phpdoccheck
+.phpcs-cache
+profiling/report
+composer.lock

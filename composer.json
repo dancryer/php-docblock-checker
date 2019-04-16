@@ -30,12 +30,14 @@
     "php": ">=5.5",
     "nikic/php-parser": "3.*|4.*",
     "symfony/console": "3.4.*|4.*",
-    "symfony/yaml": "3.4.*|4.*"
+    "symfony/yaml": "3.4.*|4.*",
+    "ext-json": "*"
   },
   "require-dev": {
     "jakub-onderka/php-parallel-lint": "0.8.*",
     "phpstan/phpstan": "^0.11.5",
-    "squizlabs/php_codesniffer": "^3.4"
+    "squizlabs/php_codesniffer": "^3.4",
+    "phperf/xh-tool": "^1.1"
   },
   "bin": [
     "bin/phpdoccheck"

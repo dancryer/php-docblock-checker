@@ -13,8 +13,8 @@ use PhpDocBlockChecker\InputFactory;
 use Symfony\Component\Console\Application;
 
 $paths = [
-   'local' => __DIR__ . '/../vendor/autoload.php', // locally
-   'dependency' => __DIR__ . '/../../../autoload.php' // dependency
+    'local' => __DIR__ . '/../vendor/autoload.php', // locally
+    'dependency' => __DIR__ . '/../../../autoload.php' // dependency
 ];
 
 $isDependency = false;
@@ -22,24 +22,24 @@ $projectRoot = __DIR__ . '/..';
 $loaded = false;
 
 foreach ($paths as $type => $path) {
-   if (file_exists($path)) {
-      if ($type === 'dependency') {
-         $projectRoot = __DIR__ . '/../../../..';
-         $isDependency = true;
-      }
-      require_once $path;
-      $loaded = true;
-      break;
-   }
+    if (file_exists($path)) {
+        if ($type === 'dependency') {
+            $projectRoot = __DIR__ . '/../../../..';
+            $isDependency = true;
+        }
+        require_once $path;
+        $loaded = true;
+        break;
+    }
 }
 
 if (!$loaded) {
-   echo 'Unable to load composer autoloader';
-   exit(1);
+    echo 'Unable to load composer autoloader';
+    exit(1);
 }
 
 (new Application('PHP Docblock Checker', '@package_version@'))
-   ->add(new CheckerCommand())
-   ->getApplication()
-   ->setDefaultCommand('check', true)// Single command application
-   ->run();
+    ->add(new CheckerCommand())
+    ->getApplication()
+    ->setDefaultCommand('check', true)// Single command application
+    ->run();

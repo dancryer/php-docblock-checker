@@ -3,6 +3,7 @@
 namespace PhpDocBlockChecker\FileParser;
 
 use Exception;
+use Exception;
 use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpDocBlockChecker\FileInfo;
 use PhpParser\Comment\Doc;
