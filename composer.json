@@ -27,7 +27,7 @@
     "source": "https://github.com/dancryer/php-docblock-checker"
   },
   "require": {
-    "php": ">=5.4",
+    "php": ">=5.5",
     "nikic/php-parser": "3.*|4.*",
     "symfony/console": "3.4.*|4.*",
     "symfony/yaml": "3.4.*|4.*"

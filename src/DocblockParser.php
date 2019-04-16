@@ -107,7 +107,7 @@ class DocblockParser
             if (self::isTagged($line)) {
                 $b++;
                 $blocks[] = array();
-            } else if ($b === -1) {
+            } elseif ($b === -1) {
                 $b = 0;
                 $blocks[] = array();
             }
