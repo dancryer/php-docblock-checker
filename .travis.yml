@@ -1,18 +1,19 @@
 language: php
 
 php:
-  - 5.4
   - 5.5
   - 5.6
   - 7.0
   - 7.1
   - 7.2
+  - 7.3
 
 cache:
   directories:
     - vendor
 
 before_script:
+  - if [[ ${TRAVIS_PHP_VERSION:0:1} == "5" || ${TRAVIS_PHP_VERSION:0:3} == "7.0" ]] ; then cat composer.json | jq '. | del(.scripts.static) | del(.scripts.check[2]) | del(."require-dev"."phpstan/phpstan")' > composer.old && mv composer.old composer.json; fi
   - composer install -o
 
 script:

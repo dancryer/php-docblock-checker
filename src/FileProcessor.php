@@ -116,7 +116,7 @@ class FileProcessor
 
                     if ($type instanceof NullableType) {
                         $type = $type->type->toString();
-                    } else if ($type !== null) {
+                    } elseif ($type !== null) {
                         $type = $type->toString();
                     }
 
@@ -150,7 +150,7 @@ class FileProcessor
 
                         if ($type instanceof NullableType) {
                             $type = $type->type->toString();
-                        } else if ($type !== null) {
+                        } elseif ($type !== null) {
                             $type = $type->toString();
                         }
 
