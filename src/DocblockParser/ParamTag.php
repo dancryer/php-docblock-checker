@@ -28,6 +28,10 @@ class ParamTag extends Tag
 
         $parts = preg_split('/\s+/', $value, 3);
 
+        if ($parts === false) {
+            return;
+        }
+
         $this->type = isset($parts[0]) ? $parts[0] : '';
         $this->var = isset($parts[1]) ? $parts[1] : '';
         $this->desc = isset($parts[2]) ? $parts[2] : '';

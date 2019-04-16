@@ -35,7 +35,7 @@ class TagCollection
     }
 
     /**
-     * @param $name
+     * @param string $name
      * @return bool
      */
     public function hasTag($name)

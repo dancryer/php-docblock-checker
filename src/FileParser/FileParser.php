@@ -4,6 +4,7 @@ namespace PhpDocBlockChecker\FileParser;
 
 use Exception;
 use PhpDocBlockChecker\DocblockParser\DocblockParser;
+use PhpDocBlockChecker\DocblockParser\ReturnTag;
 use PhpDocBlockChecker\FileInfo;
 use PhpParser\Comment\Doc;
 use PhpParser\Node\Expr;
@@ -275,17 +276,18 @@ class FileParser
             $return = $tagCollection->getReturnTags();
             $return = array_shift($return);
 
-            $types = [];
-            /** @var string $tmpType */
-            foreach (explode('|', $return->getType()) as $tmpType) {
-                if (isset($uses[$tmpType])) {
-                    $tmpType = $uses[$tmpType];
+            if ($return instanceof ReturnTag) {
+                $types = [];
+                /** @var string $tmpType */
+                foreach (explode('|', $return->getType()) as $tmpType) {
+                    if (isset($uses[$tmpType])) {
+                        $tmpType = $uses[$tmpType];
+                    }
+
+                    $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
                 }
-
-                $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
+                $rtn['return'] = implode('|', $types);
             }
-
-            $rtn['return'] = implode('|', $types);
         }
 
         return $rtn;

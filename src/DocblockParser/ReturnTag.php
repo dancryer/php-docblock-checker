@@ -24,6 +24,10 @@ class ReturnTag extends Tag
 
         $parts = preg_split('/\s+/', $value, 2);
 
+        if ($parts === false) {
+            return;
+        }
+
         $this->type = isset($parts[0]) ? $parts[0] : '';
         $this->desc = isset($parts[1]) ? $parts[1] : '';
     }
