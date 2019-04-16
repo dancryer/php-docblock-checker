@@ -48,28 +48,23 @@ class FileParser
      */
     public function parseFile($file)
     {
-        try {
-            $contents = file_get_contents($file);
-            if ($contents === false) {
-                throw new \RuntimeException(sprintf('Unable to read file "%s"', $file));
-            }
-            $stmts = $this->parser->parse($contents);
-
-            if ($stmts === null) {
-                return new FileInfo($file, [], [], filemtime($file));
-            }
-
-            $result = $this->processStatements($file, $stmts);
-            return new FileInfo(
-                $file,
-                $result['classes'],
-                $result['methods'],
-                filemtime($file)
-            );
-
-        } catch (Exception $ex) {
-            // Take no action.
+        $contents = file_get_contents($file);
+        if ($contents === false) {
+            throw new \RuntimeException(sprintf('Unable to read file "%s"', $file));
         }
+        $stmts = $this->parser->parse($contents);
+
+        if ($stmts === null) {
+            return new FileInfo($file, [], [], filemtime($file));
+        }
+
+        $result = $this->processStatements($file, $stmts);
+        return new FileInfo(
+            $file,
+            $result['classes'],
+            $result['methods'],
+            filemtime($file)
+        );
     }
 
     /**
