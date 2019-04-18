@@ -14,6 +14,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Use_;
+use PhpParser\NodeAbstract;
 use PhpParser\Parser;
 
 /**
@@ -119,7 +120,7 @@ class FileParser
 
                     if ($type instanceof NullableType) {
                         $type = $type->type->toString();
-                    } elseif ($type !== null) {
+                    } elseif ($type instanceof NodeAbstract) {
                         $type = $type->toString();
                     }
 
