@@ -3,6 +3,7 @@
 namespace PhpDocBlockChecker;
 
 use PhpDocBlockChecker\Check\Checker;
+use PhpDocBlockChecker\FileParser\FileParser;
 use PhpDocBlockChecker\Status\FileStatus;
 
 class FileChecker
@@ -11,17 +12,25 @@ class FileChecker
      * @var FileInfoCacheProvider
      */
     private $cache;
-    private $parser;
-
     /**
      * @var Checker
      */
     private $checker;
+    /**
+     * @var FileParser
+     */
+    private $fileParser;
 
-    public function __construct(FileInfoCacheProvider $cache, $parser, Checker $checker)
+    /**
+     * FileChecker constructor.
+     * @param FileInfoCacheProvider $cache
+     * @param FileParser $fileParser
+     * @param Checker $checker
+     */
+    public function __construct(FileInfoCacheProvider $cache, FileParser $fileParser, Checker $checker)
     {
         $this->cache = $cache;
-        $this->parser = $parser;
+        $this->fileParser = $fileParser;
         $this->checker = $checker;
     }
 
@@ -31,7 +40,7 @@ class FileChecker
      */
     public function checkFile($fileName)
     {
-        $file = $this->getFile($fileName);
+        $file = $this->getFileDetails($fileName);
 
         return $this->checker->check($file);
     }
@@ -40,7 +49,7 @@ class FileChecker
      * @param string $fileName
      * @return FileInfo
      */
-    private function getFile($fileName)
+    private function getFileDetails($fileName)
     {
         if ($this->cache->exists($fileName)) {
             $cachedFile = $this->cache->get($fileName);
@@ -49,16 +58,7 @@ class FileChecker
             }
         }
 
-        $processor = new FileProcessor($fileName, $this->parser);
-        $fileInfo = new FileInfo(
-            $fileName,
-            $processor->getClasses(),
-            $processor->getMethods(),
-            filemtime($fileName)
-        );
-
-        unset($processor);
-
+        $fileInfo = $this->fileParser->parseFile($fileName);
         $this->cache->set($fileInfo);
 
         return $fileInfo;

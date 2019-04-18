@@ -1,8 +1,11 @@
 <?php
 
-namespace PhpDocBlockChecker;
+namespace PhpDocBlockChecker\FileParser;
 
 use Exception;
+use PhpDocBlockChecker\DocblockParser\DocblockParser;
+use PhpDocBlockChecker\DocblockParser\ReturnTag;
+use PhpDocBlockChecker\FileInfo;
 use PhpParser\Comment\Doc;
 use PhpParser\Node\Expr;
 use PhpParser\Node\NullableType;
@@ -18,68 +21,69 @@ use PhpParser\Parser;
  * Uses Nikic/PhpParser to parse PHP files and find relevant information for the checker.
  * @package PhpDocBlockChecker
  */
-class FileProcessor
+class FileParser
 {
-    protected $file;
-    protected $classes = [];
-    protected $methods = [];
+    /**
+     * @var DocblockParser
+     */
+    private $docblockParser;
+    /**
+     * @var Parser
+     */
+    private $parser;
 
     /**
      * Load and parse a PHP file.
-     * @param string $file
      * @param Parser $parser
+     * @param DocblockParser $docblockParser
      */
-    public function __construct($file, Parser $parser)
+    public function __construct(Parser $parser, DocblockParser $docblockParser)
     {
-        $this->file = $file;
+        $this->parser = $parser;
+        $this->docblockParser = $docblockParser;
+    }
 
-        try {
-            $contents = file_get_contents($file);
-            if ($contents === false) {
-                return;
-            }
-            $stmts = $parser->parse($contents);
-
-            if ($stmts === null) {
-                return;
-            }
-            $this->processStatements($stmts);
-        } catch (Exception $ex) {
-            // Take no action.
+    /**
+     * @param string $file
+     * @return FileInfo
+     */
+    public function parseFile($file)
+    {
+        $contents = file_get_contents($file);
+        if ($contents === false) {
+            throw new \RuntimeException(sprintf('Unable to read file "%s"', $file));
         }
-    }
+        $stmts = $this->parser->parse($contents);
 
-    /**
-     * Return a list of class details from the given PHP file.
-     * @return array
-     */
-    public function getClasses()
-    {
-        return $this->classes;
-    }
+        if ($stmts === null) {
+            return new FileInfo($file, [], [], filemtime($file));
+        }
 
-    /**
-     * Return a list of method details from the given PHP file.
-     * @return array
-     */
-    public function getMethods()
-    {
-        return $this->methods;
+        $result = $this->processStatements($file, $stmts);
+        return new FileInfo(
+            $file,
+            $result['classes'],
+            $result['methods'],
+            filemtime($file)
+        );
     }
 
     /**
      * Looks for class definitions, and then within them method definitions, docblocks, etc.
+     * @param string $file
      * @param array $statements
      * @param string $prefix
      * @return mixed
      */
-    protected function processStatements(array $statements, $prefix = '')
+    protected function processStatements($file, array $statements, $prefix = '')
     {
         $uses = [];
+        $methods = [];
+        $classes = [];
 
         foreach ($statements as $statement) {
             if ($statement instanceof Namespace_) {
-                return $this->processStatements($statement->stmts, (string)$statement->name);
+                return $this->processStatements($file, $statement->stmts, (string)$statement->name);
             }
 
             if ($statement instanceof Use_) {
@@ -98,8 +102,8 @@ class FileProcessor
                 $class = $statement;
                 $fullClassName = $prefix . '\\' . $class->name;
 
-                $this->classes[$fullClassName] = [
-                    'file' => $this->file,
+                $classes[$fullClassName] = [
+                    'file' => $file,
                     'line' => $class->getAttribute('startLine'),
                     'name' => $fullClassName,
                     'docblock' => $this->getDocblock($class, $uses),
@@ -134,7 +138,7 @@ class FileProcessor
                     }
 
                     $thisMethod = [
-                        'file' => $this->file,
+                        'file' => $file,
                         'class' => $fullClassName,
                         'name' => $fullMethodName,
                         'line' => $method->getAttribute('startLine'),
@@ -185,10 +189,12 @@ class FileProcessor
                         $thisMethod['params']['$' . $name] = $type;
                     }
 
-                    $this->methods[$fullMethodName] = $thisMethod;
+                    $methods[$fullMethodName] = $thisMethod;
                 }
             }
         }
+
+        return ['methods' => $methods, 'classes' => $classes];
     }
 
     /**
@@ -237,27 +243,24 @@ class FileProcessor
     }
 
     /**
-     * Use Paul Scott's docblock parser to parse a docblock, then return the relevant parts.
      * @param string $text
      * @param array $uses
      * @return array
      */
     protected function processDocblock($text, array $uses = [])
     {
-        $parser = new DocblockParser($text);
+        $tagCollection = $this->docblockParser->parseComment($text);
 
-        if ($parser->isInheritDocComment()) {
+        if ($tagCollection->hasTag('inheritdoc')) {
             return ['inherit' => true];
         }
 
         $rtn = ['params' => [], 'return' => null];
 
-        if (isset($parser->tags['param'])) {
-            foreach ($parser->tags['param'] as $param) {
-                $type = (string)$param['type'];
-
+        if ($tagCollection->hasTag('param')) {
+            foreach ($tagCollection->getParamTags() as $paramTag) {
                 $types = [];
-                foreach (explode('|', $type) as $tmpType) {
+                foreach (explode('|', $paramTag->getType()) as $tmpType) {
                     if (isset($uses[$tmpType])) {
                         $tmpType = $uses[$tmpType];
                     }
@@ -265,26 +268,26 @@ class FileProcessor
                     $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
                 }
 
-                $rtn['params'][$param['var']] = implode('|', $types);
+                $rtn['params'][$paramTag->getVar()] = implode('|', $types);
             }
         }
 
-        if (isset($parser->tags['return'])) {
-            $return = array_shift($parser->tags['return']);
+        if ($tagCollection->hasTag('return')) {
+            $return = $tagCollection->getReturnTags();
+            $return = array_shift($return);
 
-            $type = $return['type'];
+            if ($return instanceof ReturnTag) {
+                $types = [];
+                /** @var string $tmpType */
+                foreach (explode('|', $return->getType()) as $tmpType) {
+                    if (isset($uses[$tmpType])) {
+                        $tmpType = $uses[$tmpType];
+                    }
 
-            $types = [];
-            /** @var string $tmpType */
-            foreach (explode('|', $type) as $tmpType) {
-                if (isset($uses[$tmpType])) {
-                    $tmpType = $uses[$tmpType];
+                    $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
                 }
-
-                $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
+                $rtn['return'] = implode('|', $types);
             }
-
-            $rtn['return'] = implode('|', $types);
         }
 
         return $rtn;

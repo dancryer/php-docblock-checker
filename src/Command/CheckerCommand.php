@@ -12,12 +12,12 @@ namespace PhpDocBlockChecker\Command;
 use PhpDocBlockChecker\Check\Checker;
 use PhpDocBlockChecker\Config\ConfigParser;
 use PhpDocBlockChecker\Config\ConfigProcessor;
+use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpDocBlockChecker\FileChecker;
 use PhpDocBlockChecker\FileInfoCacheProvider;
+use PhpDocBlockChecker\FileParser\FileParser;
 use PhpDocBlockChecker\FileProvider\FileProviderFactory;
 use PhpDocBlockChecker\Status\StatusCollection;
-use PhpDocBlockChecker\Status\StatusType\Error\ClassError;
-use PhpDocBlockChecker\Status\StatusType\Error\MethodError;
 use PhpParser\ParserFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -149,7 +149,10 @@ class CheckerCommand extends Command
 
         $fileChecker = new FileChecker(
             new FileInfoCacheProvider($config->getCacheFile()),
-            (new ParserFactory())->create(ParserFactory::PREFER_PHP7),
+            new FileParser(
+                (new ParserFactory())->create(ParserFactory::PREFER_PHP7),
+                new DocblockParser()
+            ),
             new Checker($config)
         );
 
