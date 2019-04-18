@@ -3,6 +3,7 @@
 namespace PhpDocBlockChecker\FileProvider;
 
 use PhpDocBlockChecker\Config\Config;
+use RuntimeException;
 
 class FileProviderFactory
 {
@@ -13,7 +14,11 @@ class FileProviderFactory
     public static function getFileProvider(Config $config)
     {
         if ($config->isFromStdin()) {
-            return new StdinFileProvider($config->getExclude());
+            $handle = fopen('php://stdin', 'rb');
+            if ($handle === false) {
+                throw new RuntimeException('Unable to open stdin for reading');
+            }
+            return new StdinFileProvider($handle, $config->getExclude());
         }
         return new DirectoryFileProvider($config->getDirectory(), $config->getExclude());
     }

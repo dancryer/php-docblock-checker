@@ -5,7 +5,7 @@ namespace PhpDocBlockChecker\FileProvider;
 interface FileProviderInterface
 {
     /**
-     * @return string[]
+     * @return \Traversable
      */
-    public function getFiles();
+    public function getFileIterator();
 }

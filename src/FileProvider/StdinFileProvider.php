@@ -2,47 +2,60 @@
 
 namespace PhpDocBlockChecker\FileProvider;
 
-class StdinFileProvider extends FileProvider
+class StdinFileProvider implements FileProviderInterface
 {
+    use ExcludeFileTrait;
+
+    /**
+     * @var resource
+     */
+    private $handle;
+
     /**
      * StdinFileProvider constructor.
+     * @param resource $handle
      * @param array $excludes
      */
-    public function __construct(array $excludes)
+    public function __construct($handle, array $excludes)
     {
+        $this->handle = $handle;
         $this->excludes = $excludes;
     }
 
-    /**
-     * @return string[]
-     */
-    public function getFiles()
+    public function __destruct()
     {
-        $files = file('php://stdin');
+        // Close the file handle if its still open
+        if ($this->fileHandleOpen()) {
+            fclose($this->handle);
+        }
+    }
 
-        if (empty($files) || !is_array($files)) {
-            return [];
+    private function fileHandleOpen()
+    {
+        $types = ['file' => 'file', 'stream' => 'stream'];
+
+        return isset($types[get_resource_type($this->handle)]);
+    }
+
+    /**
+     * @return \ArrayIterator
+     */
+    public function getFileIterator()
+    {
+        if (!$this->fileHandleOpen()) {
+            return new \ArrayIterator();
         }
 
-        $worklist = [];
-
-        /** @var string $file */
-        foreach ($files as $file) {
-            $file = trim($file);
-
-            if (!is_file($file)) {
+        $files = [];
+        while (($line = fgets($this->handle)) !== false) {
+            $line = rtrim($line, "\r\n");
+            $file = new \SplFileInfo($line);
+            if ($this->isFileExcluded('', $file)) {
                 continue;
             }
-
-            if ($this->isFileExcluded($file)) {
-                continue;
-            }
-
-            if (substr($file, -3) === 'php') {
-                $worklist[] = $file;
-            }
+            $files[] = $file;
         }
 
-        return $worklist;
+        return new \ArrayIterator($files);
     }
 }

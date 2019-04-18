@@ -137,14 +137,13 @@ class CheckerCommand extends Command
 
         $config = (new ConfigProcessor(new ConfigParser($input, $this->getDefinition())))->processConfig();
 
-
         // Get files to check:
-        $files = FileProviderFactory::getFileProvider($config)->getFiles();
+        $files = FileProviderFactory::getFileProvider($config)->getFileIterator();
 
         // Check files:
         $filesPerLine = $config->getFilesPerLine();
-        $totalFiles = count($files);
-        $files = array_chunk($files, $filesPerLine);
+        $totalFiles = iterator_count($files);
+        //$files = array_chunk($files, $filesPerLine);
         $processed = 0;
 
         $fileChecker = new FileChecker(
@@ -164,33 +163,28 @@ class CheckerCommand extends Command
             $output->writeln('');
         }
 
-        while (count($files)) {
-            $chunk = array_shift($files);
-            $chunkFiles = count($chunk);
+        /** @var \SplFileInfo $file */
+        foreach ($files as $file) {
+            $processed++;
 
-            while (count($chunk)) {
-                $processed++;
-                $file = array_shift($chunk);
+            $status = $fileChecker->checkFile($file->getPathname());
+            $statusCollection->addFileStatus($status);
 
-                $status = $fileChecker->checkFile($file);
-                $statusCollection->addFileStatus($status);
-
-                if ($config->isVerbose()) {
-                    if ($status->hasErrors()) {
-                        $output->write('<fg=red>F</>');
-                    } elseif ($status->hasWarnings()) {
-                        $output->write('<fg=yellow>W</>');
-                    } else {
-                        $output->write('<info>.</info>');
-                    }
+            if ($config->isVerbose()) {
+                if ($status->hasErrors()) {
+                    $output->write('<fg=red>F</>');
+                } elseif ($status->hasWarnings()) {
+                    $output->write('<fg=yellow>W</>');
+                } else {
+                    $output->write('<info>.</info>');
                 }
             }
 
-            if ($config->isVerbose()) {
+            if ($processed % $config->getFilesPerLine() === 0 && $config->isVerbose()) {
                 $output->writeln(
                     sprintf(
                         '%s %s/%d (%d%%)',
-                        str_pad('', $filesPerLine - $chunkFiles),
+                        str_pad('', $filesPerLine - $processed),
                         str_pad((string)$processed, strlen((string)$totalFiles), ' ', STR_PAD_LEFT),
                         $totalFiles,
                         floor((100 / $totalFiles) * $processed)
@@ -198,7 +192,6 @@ class CheckerCommand extends Command
                 );
             }
         }
-
 
         if ($config->isVerbose()) {
             $time = round(microtime(true) - $startTime, 2);

@@ -37,7 +37,8 @@
     "jakub-onderka/php-parallel-lint": "0.8.*",
     "phpstan/phpstan": "^0.11.5",
     "squizlabs/php_codesniffer": "^3.4",
-    "phperf/xh-tool": "^1.1"
+    "phperf/xh-tool": "^1.1",
+    "phpunit/phpunit": "^4.8"
   },
   "bin": [
     "bin/phpdoccheck"
@@ -49,17 +50,20 @@
   },
   "scripts": {
     "lint": "parallel-lint -e php --exclude vendor .",
+    "test": "phpunit",
     "doccheck": "./bin/phpdoccheck",
     "phpcs": "phpcs --extensions=php --cache=.phpcs-cache",
     "static": "phpstan analyse src --level=7",
     "check": [
       "@lint",
+      "@test",
       "@phpcs",
       "@static"
     ]
   },
   "scripts-descriptions": {
     "lint": "Run the php linter to check for valid PHP",
+    "test": "Run the phpunit tests",
     "doccheck": "Run the docblock checker on all files in the project",
     "phpcs": "Run the code sniffer on all files in the project",
     "static": "Run phpstan on the src directory",
