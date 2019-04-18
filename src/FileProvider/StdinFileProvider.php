@@ -25,9 +25,14 @@ class StdinFileProvider implements FileProviderInterface
     public function __destruct()
     {
         // Close the file handle if its still open
-        if (get_resource_type($this->handle) === 'file') {
+        if ($this->fileHandleOpen()) {
             fclose($this->handle);
         }
+    }
+
+    private function fileHandleOpen()
+    {
+        return get_resource_type($this->handle) === 'file';
     }
 
     /**
@@ -35,16 +40,18 @@ class StdinFileProvider implements FileProviderInterface
      */
     public function getFileIterator()
     {
+        if (!$this->fileHandleOpen()) {
+            return new \ArrayIterator();
+        }
+
         $files = [];
-        if ($this->handle) {
-            while (($line = fgets($this->handle)) !== false) {
-                $line = rtrim($line, "\r\n");
-                $file = new \SplFileInfo($line);
-                if ($this->isFileExcluded('', $file)) {
-                    continue;
-                }
-                $files[] = $file;
+        while (($line = fgets($this->handle)) !== false) {
+            $line = rtrim($line, "\r\n");
+            $file = new \SplFileInfo($line);
+            if ($this->isFileExcluded('', $file)) {
+                continue;
             }
+            $files[] = $file;
         }
 
         return new \ArrayIterator($files);
