@@ -48,9 +48,11 @@ class TagCollection
      */
     public function getParamTags()
     {
-        return array_filter($this->tags, static function (Tag $tag) {
-            return $tag instanceof ParamTag;
-        });
+        return array_values(
+            array_filter($this->tags, static function (Tag $tag) {
+                return $tag instanceof ParamTag;
+            })
+        );
     }
 
     /**
@@ -58,8 +60,10 @@ class TagCollection
      */
     public function getReturnTags()
     {
-        return array_filter($this->tags, static function (Tag $tag) {
-            return $tag instanceof ReturnTag;
-        });
+        return array_values(
+            array_filter($this->tags, static function (Tag $tag) {
+                return $tag instanceof ReturnTag;
+            })
+        );
     }
 }

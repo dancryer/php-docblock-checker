@@ -2,13 +2,13 @@
 
 namespace PhpDocBlockChecker\FileProvider;
 
+use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use RecursiveRegexIterator;
-use RegexIterator;
 
-class DirectoryFileProvider extends FileProvider
+class DirectoryFileProvider implements FileProviderInterface
 {
+    private $excludes;
     /**
      * @var string
      */
@@ -26,26 +26,13 @@ class DirectoryFileProvider extends FileProvider
     }
 
     /**
-     * @return string[]
+     * @return \Iterator
      */
-    public function getFiles()
+    public function getFileIterator()
     {
-        $directory = new RecursiveDirectoryIterator($this->directory);
+        $directory = new RecursiveDirectoryIterator($this->directory, FilesystemIterator::SKIP_DOTS);
+
         $iterator = new RecursiveIteratorIterator($directory);
-        $regex = new RegexIterator($iterator, '/^.+\.php$/i', RecursiveRegexIterator::GET_MATCH);
-        $worklist = [];
-
-        foreach ($regex as $match) {
-            if (!isset($match[0])) {
-                continue;
-            }
-            $file = $match[0];
-
-            if (!$this->isFileExcluded(str_replace($this->directory, '', $file))) {
-                $worklist[] = $file;
-            }
-        }
-
-        return $worklist;
+        return new FileExclusionFilter($iterator, $this->directory, $this->excludes);
     }
 }

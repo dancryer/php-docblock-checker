@@ -13,7 +13,8 @@ class FileProviderFactory
     public static function getFileProvider(Config $config)
     {
         if ($config->isFromStdin()) {
-            return new StdinFileProvider($config->getExclude());
+            $handle = fopen('php://stdin', 'rb');
+            return new StdinFileProvider($handle, $config->getExclude());
         }
         return new DirectoryFileProvider($config->getDirectory(), $config->getExclude());
     }

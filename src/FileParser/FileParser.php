@@ -2,7 +2,6 @@
 
 namespace PhpDocBlockChecker\FileParser;
 
-use Exception;
 use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpDocBlockChecker\DocblockParser\ReturnTag;
 use PhpDocBlockChecker\FileInfo;

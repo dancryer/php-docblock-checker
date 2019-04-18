@@ -2,47 +2,51 @@
 
 namespace PhpDocBlockChecker\FileProvider;
 
-class StdinFileProvider extends FileProvider
+class StdinFileProvider implements FileProviderInterface
 {
+    use ExcludeFileTrait;
+
+    /**
+     * @var resource
+     */
+    private $handle;
+
     /**
      * StdinFileProvider constructor.
+     * @param resource $handle
      * @param array $excludes
      */
-    public function __construct(array $excludes)
+    public function __construct($handle, array $excludes)
     {
+        $this->handle = $handle;
         $this->excludes = $excludes;
     }
 
-    /**
-     * @return string[]
-     */
-    public function getFiles()
+    public function __destruct()
     {
-        $files = file('php://stdin');
+        // Close the file handle if its still open
+        if (get_resource_type($this->handle) === 'file') {
+            fclose($this->handle);
+        }
+    }
 
-        if (empty($files) || !is_array($files)) {
-            return [];
+    /**
+     * @return \ArrayIterator
+     */
+    public function getFileIterator()
+    {
+        $files = [];
+        if ($this->handle) {
+            while (($line = fgets($this->handle)) !== false) {
+                $line = rtrim($line, "\r\n");
+                $file = new \SplFileInfo($line);
+                if ($this->isFileExcluded('', $file)) {
+                    continue;
+                }
+                $files[] = $file;
+            }
         }
 
-        $worklist = [];
-
-        /** @var string $file */
-        foreach ($files as $file) {
-            $file = trim($file);
-
-            if (!is_file($file)) {
-                continue;
-            }
-
-            if ($this->isFileExcluded($file)) {
-                continue;
-            }
-
-            if (substr($file, -3) === 'php') {
-                $worklist[] = $file;
-            }
-        }
-
-        return $worklist;
+        return new \ArrayIterator($files);
     }
 }
