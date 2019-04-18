@@ -32,7 +32,7 @@ class StdinFileProvider implements FileProviderInterface
 
     private function fileHandleOpen()
     {
-        $types = ['file' => null, 'stream' => null];
+        $types = ['file' => 'file', 'stream' => 'stream'];
 
         return isset($types[get_resource_type($this->handle)]);
     }
