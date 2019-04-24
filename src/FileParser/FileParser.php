@@ -154,7 +154,7 @@ class FileParser
 
                         if ($type instanceof NullableType) {
                             $type = $type->type->toString();
-                        } elseif ($type !== null) {
+                        } elseif ($type instanceof NodeAbstract) {
                             $type = $type->toString();
                         }
 
