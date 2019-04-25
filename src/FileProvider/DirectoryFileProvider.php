@@ -1,13 +1,22 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\FileProvider;
 
 use FilesystemIterator;
+use Iterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use Traversable;
 
+/**
+ * Class DirectoryFileProvider
+ * @package PhpDocBlockChecker\FileProvider
+ */
 class DirectoryFileProvider implements FileProviderInterface
 {
+    /**
+     * @var string[]
+     */
     private $excludes;
     /**
      * @var string
@@ -17,18 +26,18 @@ class DirectoryFileProvider implements FileProviderInterface
     /**
      * DirectoryFileProvider constructor.
      * @param string $directory
-     * @param array $excludes
+     * @param string[] $excludes
      */
-    public function __construct($directory, array $excludes)
+    public function __construct(string $directory, array $excludes)
     {
         $this->directory = $directory;
         $this->excludes = $excludes;
     }
 
     /**
-     * @return \Iterator
+     * @return Iterator
      */
-    public function getFileIterator()
+    public function getFileIterator(): Traversable
     {
         $directory = new RecursiveDirectoryIterator($this->directory, FilesystemIterator::SKIP_DOTS);
 

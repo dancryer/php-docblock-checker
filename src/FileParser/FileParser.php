@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\FileParser;
 
@@ -16,6 +16,7 @@ use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Use_;
 use PhpParser\NodeAbstract;
 use PhpParser\Parser;
+use RuntimeException;
 
 /**
  * Uses Nikic/PhpParser to parse PHP files and find relevant information for the checker.
@@ -47,35 +48,36 @@ class FileParser
      * @param string $file
      * @return FileInfo
      */
-    public function parseFile($file)
+    public function parseFile(string $file): FileInfo
     {
         $contents = file_get_contents($file);
         if ($contents === false) {
-            throw new \RuntimeException(sprintf('Unable to read file "%s"', $file));
+            throw new RuntimeException(sprintf('Unable to read file "%s"', $file));
         }
+
         $stmts = $this->parser->parse($contents);
 
+        $mtime = filemtime($file);
+        if ($mtime === false) {
+            $mtime = time();
+        }
+
         if ($stmts === null) {
-            return new FileInfo($file, [], [], filemtime($file));
+            return new FileInfo($file, [], [], $mtime);
         }
 
         $result = $this->processStatements($file, $stmts);
-        return new FileInfo(
-            $file,
-            $result['classes'],
-            $result['methods'],
-            filemtime($file)
-        );
+        return new FileInfo($file, $result['classes'], $result['methods'], $mtime);
     }
 
     /**
      * Looks for class definitions, and then within them method definitions, docblocks, etc.
      * @param string $file
-     * @param array $statements
+     * @param Stmt[] $statements
      * @param string $prefix
      * @return mixed
      */
-    protected function processStatements($file, array $statements, $prefix = '')
+    protected function processStatements(string $file, array $statements, string $prefix = '')
     {
         $uses = [];
         $methods = [];
@@ -90,7 +92,7 @@ class FileParser
                 foreach ($statement->uses as $use) {
                     // polyfill
                     $alias = $use->alias;
-                    if (null === $alias && method_exists($use, 'getAlias')) {
+                    if (null === $alias) {
                         $alias = $use->getAlias();
                     }
 
@@ -98,29 +100,68 @@ class FileParser
                 }
             }
 
-            if ($statement instanceof Class_) {
-                $class = $statement;
-                $fullClassName = $prefix . '\\' . $class->name;
+            if (!($statement instanceof Class_)) {
+                continue;
+            }
 
-                $classes[$fullClassName] = [
+            $class = $statement;
+            $fullClassName = $prefix . '\\' . $class->name;
+
+            $classes[$fullClassName] = [
+                'file' => $file,
+                'line' => $class->getAttribute('startLine'),
+                'name' => $fullClassName,
+                'docblock' => $this->getDocblock($class, $uses),
+            ];
+
+            foreach ($statement->stmts as $method) {
+                if (!$method instanceof ClassMethod) {
+                    continue;
+                }
+
+                $fullMethodName = $fullClassName . '::' . $method->name;
+
+                $type = $method->returnType;
+
+                if ($type instanceof NullableType) {
+                    $type = $type->type->toString();
+                } elseif ($type instanceof NodeAbstract) {
+                    $type = $type->toString();
+                }
+
+                if (isset($uses[$type])) {
+                    $type = $uses[$type];
+                }
+
+                if ($type !== null) {
+                    $type = strpos($type, '\\') === 0
+                        ? substr($type, 1)
+                        : $type;
+                }
+
+                if ($method->returnType instanceof NullableType) {
+                    $type = ['null', $type];
+                    sort($type);
+                }
+
+                $thisMethod = [
                     'file' => $file,
-                    'line' => $class->getAttribute('startLine'),
-                    'name' => $fullClassName,
-                    'docblock' => $this->getDocblock($class, $uses),
+                    'class' => $fullClassName,
+                    'name' => $fullMethodName,
+                    'line' => $method->getAttribute('startLine'),
+                    'return' => $type,
+                    'params' => [],
+                    'docblock' => $this->getDocblock($method, $uses),
+                    'has_return' => isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false,
                 ];
 
-                foreach ($statement->stmts as $method) {
-                    if (!$method instanceof ClassMethod) {
-                        continue;
-                    }
-
-                    $fullMethodName = $fullClassName . '::' . $method->name;
-
-                    $type = $method->returnType;
+                /** @var Param $param */
+                foreach ($method->params as $param) {
+                    $type = $param->type;
 
                     if ($type instanceof NullableType) {
                         $type = $type->type->toString();
-                    } elseif ($type instanceof NodeAbstract) {
+                    } elseif ($type !== null) {
                         $type = $type->toString();
                     }
 
@@ -129,68 +170,34 @@ class FileParser
                     }
 
                     if ($type !== null) {
-                        $type = strpos($type, '\\') === 0 ? substr($type, 1) : $type;
+                        $type = strpos($type, '\\') === 0
+                            ? substr($type, 1)
+                            : $type;
                     }
 
-                    if ($method->returnType instanceof NullableType) {
-                        $type = ['null', $type];
-                        sort($type);
+                    if ($param->default instanceof Expr &&
+                        property_exists($param->default, 'name') &&
+                        property_exists($param->default->name, 'parts') &&
+                        $type !== null &&
+                        'null' === $param->default->name->parts[0]
+                    ) {
+                        $type .= '|null';
                     }
 
-                    $thisMethod = [
-                        'file' => $file,
-                        'class' => $fullClassName,
-                        'name' => $fullMethodName,
-                        'line' => $method->getAttribute('startLine'),
-                        'return' => $type,
-                        'params' => [],
-                        'docblock' => $this->getDocblock($method, $uses),
-                        'has_return' => isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false,
-                    ];
-
-                    /** @var Param $param */
-                    foreach ($method->params as $param) {
-                        $type = $param->type;
-
-                        if ($type instanceof NullableType) {
-                            $type = $type->type->toString();
-                        } elseif ($type !== null) {
-                            $type = $type->toString();
-                        }
-
-                        if (isset($uses[$type])) {
-                            $type = $uses[$type];
-                        }
-
-                        if ($type !== null) {
-                            $type = strpos($type, '\\') === 0 ? substr($type, 1) : $type;
-                        }
-
-                        if (property_exists($param, 'default') &&
-                            $param->default instanceof Expr &&
-                            property_exists($param->default, 'name') &&
-                            property_exists($param->default->name, 'parts') &&
-                            $type !== null &&
-                            'null' === $param->default->name->parts[0]
-                        ) {
-                            $type .= '|null';
-                        }
-
-                        $name = null;
-                        // parser v3
-                        if (property_exists($param, 'name')) {
-                            $name = $param->name;
-                        }
-                        // parser v4
-                        if (null === $name && property_exists($param, 'var') && property_exists($param->var, 'name')) {
-                            $name = $param->var->name;
-                        }
-
-                        $thisMethod['params']['$' . $name] = $type;
+                    $name = null;
+                    // parser v3
+                    if (property_exists($param, 'name')) {
+                        $name = $param->name;
+                    }
+                    // parser v4
+                    if (null === $name && property_exists($param->var, 'name')) {
+                        $name = $param->var->name;
                     }
 
-                    $methods[$fullMethodName] = $thisMethod;
+                    $thisMethod['params']['$' . $name] = $type;
                 }
+
+                $methods[$fullMethodName] = $thisMethod;
             }
         }
 
@@ -199,17 +206,17 @@ class FileParser
 
     /**
      * Recursively search an array of statements for a return statement.
-     * @param array $statements
+     * @param Stmt[] $statements
      * @return bool
      */
-    protected function statementsContainReturn(array $statements)
+    protected function statementsContainReturn(array $statements): bool
     {
         foreach ($statements as $statement) {
             if ($statement instanceof Stmt\Return_) {
                 return true;
             }
 
-            if (empty($statement->stmts)) {
+            if (!isset($statement->stmts)) {
                 continue;
             }
 
@@ -224,10 +231,10 @@ class FileParser
     /**
      * Find and parse a docblock for a given class or method.
      * @param Stmt $stmt
-     * @param array $uses
-     * @return array|null
+     * @param string[] $uses
+     * @return string[][]|null
      */
-    protected function getDocblock(Stmt $stmt, array $uses = [])
+    protected function getDocblock(Stmt $stmt, array $uses = []): ?array
     {
         $comments = $stmt->getAttribute('comments');
 
@@ -244,10 +251,10 @@ class FileParser
 
     /**
      * @param string $text
-     * @param array $uses
-     * @return array
+     * @param string[] $uses
+     * @return mixed[]
      */
-    protected function processDocblock($text, array $uses = [])
+    protected function processDocblock(string $text, array $uses = []): array
     {
         $tagCollection = $this->docblockParser->parseComment($text);
 
@@ -265,7 +272,9 @@ class FileParser
                         $tmpType = $uses[$tmpType];
                     }
 
-                    $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
+                    $types[] = strpos($tmpType, '\\') === 0
+                        ? substr($tmpType, 1)
+                        : $tmpType;
                 }
 
                 $rtn['params'][$paramTag->getVar()] = implode('|', $types);
@@ -284,7 +293,9 @@ class FileParser
                         $tmpType = $uses[$tmpType];
                     }
 
-                    $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
+                    $types[] = strpos($tmpType, '\\') === 0
+                        ? substr($tmpType, 1)
+                        : $tmpType;
                 }
                 $rtn['return'] = implode('|', $types);
             }

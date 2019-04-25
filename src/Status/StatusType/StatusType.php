@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Status\StatusType;
 
@@ -27,7 +27,7 @@ abstract class StatusType
      * @param string $class
      * @param int $line
      */
-    public function __construct($file, $class, $line)
+    public function __construct(string $file, string $class, int $line)
     {
         $this->file = $file;
         $this->class = $class;
@@ -37,17 +37,17 @@ abstract class StatusType
     /**
      * @return string
      */
-    abstract public function getType();
+    abstract public function getType(): string;
 
     /**
      * @return string
      */
-    abstract public function getDecoratedMessage();
+    abstract public function getDecoratedMessage(): string;
 
     /**
      * @return string
      */
-    public function getMessage()
+    public function getMessage(): string
     {
         return strip_tags($this->getDecoratedMessage());
     }
@@ -55,7 +55,7 @@ abstract class StatusType
     /**
      * @return string
      */
-    public function getFile()
+    public function getFile(): string
     {
         return $this->file;
     }
@@ -63,7 +63,7 @@ abstract class StatusType
     /**
      * @return string
      */
-    public function getClass()
+    public function getClass(): string
     {
         return $this->class;
     }
@@ -71,7 +71,7 @@ abstract class StatusType
     /**
      * @return int
      */
-    public function getLine()
+    public function getLine(): int
     {
         return $this->line;
     }

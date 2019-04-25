@@ -1,7 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\DocblockParser;
 
+/**
+ * Class Tag
+ * @package PhpDocBlockChecker\DocblockParser
+ */
 class Tag
 {
     /**
@@ -18,7 +22,7 @@ class Tag
      * @param string $name
      * @param string $value
      */
-    public function __construct($name, $value)
+    public function __construct(string $name, string $value)
     {
         $this->name = $name;
         $this->value = $value;
@@ -27,7 +31,7 @@ class Tag
     /**
      * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -35,7 +39,7 @@ class Tag
     /**
      * @return string
      */
-    public function getValue()
+    public function getValue(): string
     {
         return $this->value;
     }

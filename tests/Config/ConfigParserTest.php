@@ -2,14 +2,15 @@
 
 namespace PhpDocBlockChecker\Config;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputOption;
 
-class ConfigParserTest extends \PHPUnit_Framework_TestCase
+class ConfigParserTest extends TestCase
 {
 
-    public function testParseOptionDefaultValue()
+    public function testParseOptionDefaultValue(): void
     {
         $config = [
             '--config-file' => ''
@@ -21,7 +22,7 @@ class ConfigParserTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($result);
     }
 
-    public function testParseOptionFileValue()
+    public function testParseOptionFileValue(): void
     {
         $tmpfile = tempnam(sys_get_temp_dir(), 'phpdoccheck');
 
@@ -38,7 +39,7 @@ class ConfigParserTest extends \PHPUnit_Framework_TestCase
         unlink($tmpfile);
     }
 
-    public function testParseOptionParamValue()
+    public function testParseOptionParamValue(): void
     {
         $config = [
             '--config-file' => '',
@@ -51,7 +52,7 @@ class ConfigParserTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($result);
     }
 
-    public function testParseOptionFileAndParamValue()
+    public function testParseOptionFileAndParamValue(): void
     {
         $tmpfile = tempnam(sys_get_temp_dir(), 'phpdoccheck');
 
@@ -70,7 +71,7 @@ class ConfigParserTest extends \PHPUnit_Framework_TestCase
     }
 
 
-    public function testParseParameterDefaultValue()
+    public function testParseParameterDefaultValue(): void
     {
         $config = [
             '--config-file' => ''
@@ -82,7 +83,7 @@ class ConfigParserTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('./', $result);
     }
 
-    public function testParseParameterFileValue()
+    public function testParseParameterFileValue(): void
     {
         $tmpfile = tempnam(sys_get_temp_dir(), 'phpdoccheck');
 
@@ -99,7 +100,7 @@ class ConfigParserTest extends \PHPUnit_Framework_TestCase
         unlink($tmpfile);
     }
 
-    public function testParseParameterParamValue()
+    public function testParseParameterParamValue(): void
     {
         $config = [
             '--config-file' => '',
@@ -112,7 +113,7 @@ class ConfigParserTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('paramTest', $result);
     }
 
-    public function testParseParameterFileAndParamValue()
+    public function testParseParameterFileAndParamValue(): void
     {
         $tmpfile = tempnam(sys_get_temp_dir(), 'phpdoccheck');
 
@@ -129,7 +130,7 @@ class ConfigParserTest extends \PHPUnit_Framework_TestCase
         unlink($tmpfile);
     }
 
-    private function getDefinition()
+    private function getDefinition(): InputDefinition
     {
         $definition = new InputDefinition();
         $definition->addOption(

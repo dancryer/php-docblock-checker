@@ -1,17 +1,21 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\FileProvider;
 
 use PhpDocBlockChecker\Config\Config;
 use RuntimeException;
 
+/**
+ * Class FileProviderFactory
+ * @package PhpDocBlockChecker\FileProvider
+ */
 class FileProviderFactory
 {
     /**
      * @param Config $config
      * @return FileProviderInterface
      */
-    public static function getFileProvider(Config $config)
+    public static function getFileProvider(Config $config): FileProviderInterface
     {
         if ($config->isFromStdin()) {
             $handle = fopen('php://stdin', 'rb');

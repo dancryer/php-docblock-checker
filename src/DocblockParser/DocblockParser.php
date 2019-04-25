@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\DocblockParser;
 
@@ -13,14 +13,14 @@ class DocblockParser
      * @param string $comment The docblock
      * @return TagCollection
      */
-    public function parseComment($comment)
+    public function parseComment(string $comment): TagCollection
     {
         preg_match_all('/@([a-zA-Z]+) *(.*)\n/', $comment, $matches, PREG_SET_ORDER);
         $tags = new TagCollection();
 
         foreach ($matches as $match) {
             array_shift($match);
-            list($tag, $body) = $match;
+            [$tag, $body] = $match;
 
             $tags->addTag($this->getTagEntity($tag, $body));
         }
@@ -33,7 +33,7 @@ class DocblockParser
      * @param string $body
      * @return ParamTag|ReturnTag|Tag
      */
-    private function getTagEntity($tag, $body)
+    private function getTagEntity(string $tag, string $body): Tag
     {
         if ($tag === 'param') {
             return new ParamTag($tag, $body);

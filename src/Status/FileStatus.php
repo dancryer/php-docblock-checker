@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Status;
 
@@ -27,14 +27,14 @@ class FileStatus
      */
     private $infos = [];
     /**
-     * @var array
+     * @var Passed[]
      */
     private $passed = [];
 
     /**
      * @param StatusType $status
      */
-    public function add(StatusType $status)
+    public function add(StatusType $status): void
     {
         if ($status instanceof Error) {
             $this->errors[] = $status;
@@ -56,7 +56,7 @@ class FileStatus
     /**
      * @return Error[]
      */
-    public function getErrors()
+    public function getErrors(): array
     {
         return $this->errors;
     }
@@ -64,7 +64,7 @@ class FileStatus
     /**
      * @return bool
      */
-    public function hasErrors()
+    public function hasErrors(): bool
     {
         return count($this->errors) > 0;
     }
@@ -72,7 +72,7 @@ class FileStatus
     /**
      * @return Warning[]
      */
-    public function getWarnings()
+    public function getWarnings(): array
     {
         return $this->warnings;
     }
@@ -80,7 +80,7 @@ class FileStatus
     /**
      * @return bool
      */
-    public function hasWarnings()
+    public function hasWarnings(): bool
     {
         return count($this->warnings) > 0;
     }
@@ -88,7 +88,7 @@ class FileStatus
     /**
      * @return Info[]
      */
-    public function getInfos()
+    public function getInfos(): array
     {
         return $this->infos;
     }
@@ -96,15 +96,15 @@ class FileStatus
     /**
      * @return bool
      */
-    public function hasInfos()
+    public function hasInfos(): bool
     {
         return count($this->infos) > 0;
     }
 
     /**
-     * @return array
+     * @return Passed[]
      */
-    public function getPassed()
+    public function getPassed(): array
     {
         return $this->passed;
     }
@@ -112,7 +112,7 @@ class FileStatus
     /**
      * @return bool
      */
-    public function hasPassed()
+    public function hasPassed(): bool
     {
         return count($this->passed) > 0;
     }

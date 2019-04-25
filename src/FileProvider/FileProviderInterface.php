@@ -1,11 +1,17 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\FileProvider;
 
+use Traversable;
+
+/**
+ * Interface FileProviderInterface
+ * @package PhpDocBlockChecker\FileProvider
+ */
 interface FileProviderInterface
 {
     /**
-     * @return \Traversable
+     * @return Traversable
      */
-    public function getFileIterator();
+    public function getFileIterator(): Traversable;
 }

@@ -1,7 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Status\StatusType\Error;
 
+/**
+ * Class MethodError
+ * @package PhpDocBlockChecker\Status\StatusType\Error
+ */
 class MethodError extends Error
 {
     /**
@@ -16,7 +20,7 @@ class MethodError extends Error
      * @param int $line
      * @param string $method
      */
-    public function __construct($file, $class, $line, $method)
+    public function __construct(string $file, string $class, int $line, string $method)
     {
         parent::__construct($file, $class, $line);
         $this->method = $method;
@@ -25,12 +29,15 @@ class MethodError extends Error
     /**
      * @return string
      */
-    public function getMethod()
+    public function getMethod(): string
     {
         return $this->method;
     }
 
-    public function getType()
+    /**
+     * @return string
+     */
+    public function getType(): string
     {
         return 'method';
     }
@@ -38,7 +45,7 @@ class MethodError extends Error
     /**
      * @return string
      */
-    public function getDecoratedMessage()
+    public function getDecoratedMessage(): string
     {
         return parent::getDecoratedMessage() . 'Method <info>' . $this->method . '</info> is missing a docblock.';
     }

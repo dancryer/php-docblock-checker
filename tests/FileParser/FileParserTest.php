@@ -4,8 +4,9 @@ namespace PhpDocBlockChecker\FileParser;
 
 use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpParser\ParserFactory;
+use PHPUnit\Framework\TestCase;
 
-class FileParserTest extends \PHPUnit_Framework_TestCase
+class FileParserTest extends TestCase
 {
 
     public function testParseFile()
