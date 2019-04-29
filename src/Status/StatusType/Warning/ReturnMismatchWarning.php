@@ -73,6 +73,8 @@ class ReturnMismatchWarning extends Warning
     {
         return parent::getDecoratedMessage() . '<info>' . $this->method .
             '</info> - @return <fg=blue>' . $this->docType .
-            '</>  does not match method signature (' . $this->returnType . ').';
+            '</>  does not match method signature (' .
+            (is_array($this->returnType) ? implode('|', $this->returnType) : $this->returnType) .
+            ').';
     }
 }
