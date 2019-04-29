@@ -49,7 +49,7 @@ class ReturnCheck extends Check
                 if ($method['docblock']['return'] !== $method['return']) {
                     if ($method['return'] === 'array' && substr($method['docblock']['return'], -2) === '[]') {
                         // Do nothing because this is fine.
-		    } else {
+                    } else {
                         $docblockTypes = explode('|', $method['docblock']['return']);
                         sort($docblockTypes);
                         if ($method['return'] !== $docblockTypes) {
@@ -63,7 +63,7 @@ class ReturnCheck extends Check
                                     $method['docblock']['return']
                                 )
                             );
-                        }			
+                        }
                     }
                 }
             }
