@@ -2,11 +2,12 @@
 
 namespace PhpDocBlockChecker\Config;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Input\InputOption;
 
-class ConfigProcessorTest extends \PHPUnit_Framework_TestCase
+class ConfigProcessorTest extends TestCase
 {
     public function testProcessDefaultConfig()
     {
@@ -16,7 +17,7 @@ class ConfigProcessorTest extends \PHPUnit_Framework_TestCase
 
         $definition = $this->getDefinition();
         $configParser = new ConfigParser(new ArrayInput($config, $definition), $definition);
-        $configProcessor = new ConfigProcessor($configParser);
+        $configProcessor = new ConfigProcessor($configParser, $definition);
         $result = $configProcessor->processConfig();
 
         $this->assertInstanceOf(Config::class, $result);
@@ -35,7 +36,7 @@ class ConfigProcessorTest extends \PHPUnit_Framework_TestCase
 
         $definition = $this->getDefinition();
         $configParser = new ConfigParser(new ArrayInput($config, $definition), $definition);
-        $configProcessor = new ConfigProcessor($configParser);
+        $configProcessor = new ConfigProcessor($configParser, $definition);
         $result = $configProcessor->processConfig();
 
         $this->assertInstanceOf(Config::class, $result);

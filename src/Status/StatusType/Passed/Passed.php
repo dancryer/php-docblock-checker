@@ -1,9 +1,13 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Status\StatusType\Passed;
 
 use PhpDocBlockChecker\Status\StatusType\StatusType;
 
+/**
+ * Class Passed
+ * @package PhpDocBlockChecker\Status\StatusType\Passed
+ */
 class Passed extends StatusType
 {
 
@@ -11,7 +15,7 @@ class Passed extends StatusType
      * Passed constructor.
      * @param string $file
      */
-    public function __construct($file)
+    public function __construct(string $file)
     {
         parent::__construct($file, '', 0);
     }
@@ -19,7 +23,7 @@ class Passed extends StatusType
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return 'passed';
     }
@@ -27,8 +31,8 @@ class Passed extends StatusType
     /**
      * @return string
      */
-    public function getDecoratedMessage()
+    public function getDecoratedMessage(): string
     {
-        // TODO: Implement getDecoratedMessage() method.
+        return '.';
     }
 }

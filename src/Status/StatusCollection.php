@@ -1,9 +1,10 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Status;
 
 use PhpDocBlockChecker\Status\StatusType\Error\Error;
 use PhpDocBlockChecker\Status\StatusType\Info\Info;
+use PhpDocBlockChecker\Status\StatusType\Passed\Passed;
 use PhpDocBlockChecker\Status\StatusType\Warning\Warning;
 
 /**
@@ -24,32 +25,26 @@ class StatusCollection
      * @var Info[]
      */
     private $infos = [];
+    /**
+     * @var Passed[]
+     */
     private $passed = [];
 
     /**
      * @param FileStatus $fileStatus
      */
-    public function addFileStatus(FileStatus $fileStatus)
+    public function addFileStatus(FileStatus $fileStatus): void
     {
-        foreach ($fileStatus->getErrors() as $error) {
-            $this->errors[] = $error;
-        }
-        foreach ($fileStatus->getWarnings() as $warning) {
-            $this->warnings[] = $warning;
-        }
-        foreach ($fileStatus->getInfos() as $info) {
-            $this->infos[] = $info;
-        }
-
-        foreach ($fileStatus->getPassed() as $passed) {
-            $this->passed[] = $passed;
-        }
+        $this->errors = array_merge($this->errors, $fileStatus->getErrors());
+        $this->warnings = array_merge($this->warnings, $fileStatus->getWarnings());
+        $this->infos = array_merge($this->infos, $fileStatus->getInfos());
+        $this->passed = array_merge($this->passed, $fileStatus->getPassed());
     }
 
     /**
      * @return int
      */
-    public function getTotalErrors()
+    public function getTotalErrors(): int
     {
         return count($this->errors);
     }
@@ -57,7 +52,7 @@ class StatusCollection
     /**
      * @return bool
      */
-    public function hasErrors()
+    public function hasErrors(): bool
     {
         return $this->getTotalErrors() > 0;
     }
@@ -65,7 +60,7 @@ class StatusCollection
     /**
      * @return Error[]
      */
-    public function getErrors()
+    public function getErrors(): array
     {
         return $this->errors;
     }
@@ -73,7 +68,7 @@ class StatusCollection
     /**
      * @return int
      */
-    public function getTotalWarnings()
+    public function getTotalWarnings(): int
     {
         return count($this->warnings);
     }
@@ -81,7 +76,7 @@ class StatusCollection
     /**
      * @return bool
      */
-    public function hasWarnings()
+    public function hasWarnings(): bool
     {
         return $this->getTotalWarnings() > 0;
     }
@@ -89,7 +84,7 @@ class StatusCollection
     /**
      * @return Warning[]
      */
-    public function getWarnings()
+    public function getWarnings(): array
     {
         return $this->warnings;
     }
@@ -97,7 +92,7 @@ class StatusCollection
     /**
      * @return int
      */
-    public function getTotalInfos()
+    public function getTotalInfos(): int
     {
         return count($this->infos);
     }
@@ -105,7 +100,7 @@ class StatusCollection
     /**
      * @return bool
      */
-    public function hasInfos()
+    public function hasInfos(): bool
     {
         return $this->getTotalInfos() > 0;
     }
@@ -113,7 +108,7 @@ class StatusCollection
     /**
      * @return Info[]
      */
-    public function getInfos()
+    public function getInfos(): array
     {
         return $this->infos;
     }
@@ -121,7 +116,7 @@ class StatusCollection
     /**
      * @return int
      */
-    public function getTotalPassed()
+    public function getTotalPassed(): int
     {
         return count($this->passed);
     }
@@ -129,15 +124,15 @@ class StatusCollection
     /**
      * @return bool
      */
-    public function hasPassed()
+    public function hasPassed(): bool
     {
         return $this->getTotalPassed() > 0;
     }
 
     /**
-     * @return array
+     * @return Passed[]
      */
-    public function getPassed()
+    public function getPassed(): array
     {
         return $this->passed;
     }

@@ -1,6 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Config;
+
+use Symfony\Component\Console\Input\InputDefinition;
 
 /**
  * Class ConfigProcessor
@@ -12,58 +14,35 @@ class ConfigProcessor
      * @var ConfigParser
      */
     private $configParser;
+    /**
+     * @var InputDefinition
+     */
+    private $definition;
 
     /**
      * ConfigProcessor constructor.
      * @param ConfigParser $configParser
+     * @param InputDefinition $definition
      */
-    public function __construct(ConfigParser $configParser)
+    public function __construct(ConfigParser $configParser, InputDefinition $definition)
     {
         $this->configParser = $configParser;
+        $this->definition = $definition;
     }
 
     /**
      * @return Config
      */
-    public function processConfig()
+    public function processConfig(): Config
     {
         $config = [];
 
-        // Process options:
-        $config['skipClasses'] = $this->configParser->parseOption('skip-classes');
-        $config['skipSignatures'] = $this->configParser->parseOption('skip-signatures');
-        $config['onlySignatures'] = $this->configParser->parseOption('only-signatures');
-        $config['json'] = $this->configParser->parseOption('json');
-        $config['failOnWarnings'] = $this->configParser->parseOption('fail-on-warnings');
-        $config['infoOnly'] = $this->configParser->parseOption('info-only');
-        $config['fromStdin'] = $this->configParser->parseOption('from-stdin');
+        foreach ($this->definition->getOptions() as $option) {
+            $name = $option->getName();
 
-        // Process parameters
-
-        $config['skipMethods'] = $this->configParser->parseParameter('skip-methods');
-        $config['cacheFile'] = $this->configParser->parseParameter('cache-file');
-        $config['directory'] = $this->configParser->parseParameter('directory');
-        // Check base path ends with a slash:
-        if (substr($config['directory'], -1) !== '/') {
-            $config['directory'] .= '/';
-        }
-
-        $config['filesPerLine'] = (int)$this->configParser->parseParameter('files-per-line');
-
-        $config['verbose'] = !$config['json'];
-
-        $exclude = $this->configParser->parseParameter('exclude');
-        // Set up excludes:
-        if ($exclude !== null) {
-            if (!is_array($exclude)) {
-                $exclude = array_map('trim', explode(',', $exclude));
-            }
-            $config['exclude'] = $exclude;
-        }
-
-        // Fix conflicting options:
-        if ($config['onlySignatures']) {
-            $config['skipSignatures'] = false;
+            $config[$name] = $option->isValueRequired() || $option->isValueOptional() ?
+                $this->configParser->parseParameter($name) :
+                $this->configParser->parseOption($name);
         }
 
         return Config::fromArray($config);

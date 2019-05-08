@@ -2,7 +2,9 @@
 
 namespace PhpDocBlockChecker\DocblockParser;
 
-class DocblockParserTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class DocblockParserTest extends TestCase
 {
     public function testParseComment()
     {

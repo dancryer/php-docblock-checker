@@ -1,7 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Status\StatusType\Warning;
 
+/**
+ * Class ParamMismatchWarning
+ * @package PhpDocBlockChecker\Status\StatusType\Warning
+ */
 class ParamMismatchWarning extends Warning
 {
     /**
@@ -31,7 +35,15 @@ class ParamMismatchWarning extends Warning
      * @param string $paramType
      * @param string $docType
      */
-    public function __construct($file, $class, $line, $method, $param, $paramType, $docType)
+    public function __construct(
+        string $file,
+        string $class,
+        int $line,
+        string $method,
+        string $param,
+        string $paramType,
+        string $docType
+    )
     {
         parent::__construct($file, $class, $line);
         $this->method = $method;
@@ -43,7 +55,7 @@ class ParamMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return 'param-mismatch';
     }
@@ -51,7 +63,7 @@ class ParamMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getMethod()
+    public function getMethod(): string
     {
         return $this->method;
     }
@@ -59,7 +71,7 @@ class ParamMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getParam()
+    public function getParam(): string
     {
         return $this->param;
     }
@@ -67,7 +79,7 @@ class ParamMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getParamType()
+    public function getParamType(): string
     {
         return $this->paramType;
     }
@@ -75,7 +87,7 @@ class ParamMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getDocType()
+    public function getDocType(): string
     {
         return $this->docType;
     }
@@ -83,7 +95,7 @@ class ParamMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getDecoratedMessage()
+    public function getDecoratedMessage(): string
     {
         return parent::getDecoratedMessage() . '<info>' . $this->method . '</info> - @param <fg=blue>' .
             $this->param . '</> (' . $this->docType .

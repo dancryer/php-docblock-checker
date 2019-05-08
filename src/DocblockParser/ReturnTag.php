@@ -1,7 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\DocblockParser;
 
+/**
+ * Class ReturnTag
+ * @package PhpDocBlockChecker\DocblockParser
+ */
 class ReturnTag extends Tag
 {
     /**
@@ -18,7 +22,7 @@ class ReturnTag extends Tag
      * @param string $name
      * @param string $value
      */
-    public function __construct($name, $value)
+    public function __construct(string $name, string $value)
     {
         parent::__construct($name, $value);
 
@@ -28,14 +32,14 @@ class ReturnTag extends Tag
             return;
         }
 
-        $this->type = isset($parts[0]) ? $parts[0] : '';
-        $this->desc = isset($parts[1]) ? $parts[1] : '';
+        $this->type = $parts[0] ?? '';
+        $this->desc = $parts[1] ?? '';
     }
 
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
@@ -43,7 +47,7 @@ class ReturnTag extends Tag
     /**
      * @return string
      */
-    public function getDesc()
+    public function getDesc(): string
     {
         return $this->desc;
     }

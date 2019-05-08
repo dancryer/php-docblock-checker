@@ -1,19 +1,25 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker;
 
-class FileInfo implements \JsonSerializable
+use JsonSerializable;
+
+/**
+ * Class FileInfo
+ * @package PhpDocBlockChecker
+ */
+class FileInfo implements JsonSerializable
 {
     /**
      * @var string
      */
     private $fileName;
     /**
-     * @var array
+     * @var mixed[][]
      */
     private $classes;
     /**
-     * @var array
+     * @var mixed[][]
      */
     private $methods;
     /**
@@ -21,7 +27,14 @@ class FileInfo implements \JsonSerializable
      */
     private $mtime;
 
-    public function __construct($fileName, $classes, $methods, $mtime)
+    /**
+     * FileInfo constructor.
+     * @param string $fileName
+     * @param mixed[][] $classes
+     * @param mixed[][] $methods
+     * @param int $mtime
+     */
+    public function __construct(string $fileName, array $classes, array $methods, int $mtime)
     {
         $this->fileName = $fileName;
         $this->classes = $classes;
@@ -30,10 +43,10 @@ class FileInfo implements \JsonSerializable
     }
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @return FileInfo
      */
-    public static function fromArray(array $data)
+    public static function fromArray(array $data): FileInfo
     {
         return new self($data['fileName'], $data['classes'], $data['methods'], $data['mtime']);
     }
@@ -41,23 +54,23 @@ class FileInfo implements \JsonSerializable
     /**
      * @return string
      */
-    public function getFileName()
+    public function getFileName(): string
     {
         return $this->fileName;
     }
 
     /**
-     * @return array
+     * @return mixed[][]
      */
-    public function getClasses()
+    public function getClasses(): array
     {
         return $this->classes;
     }
 
     /**
-     * @return array
+     * @return mixed[][]
      */
-    public function getMethods()
+    public function getMethods(): array
     {
         return $this->methods;
     }
@@ -65,12 +78,15 @@ class FileInfo implements \JsonSerializable
     /**
      * @return int
      */
-    public function getMtime()
+    public function getMtime(): int
     {
         return $this->mtime;
     }
 
-    public function jsonSerialize()
+    /**
+     * @return mixed[]
+     */
+    public function jsonSerialize(): array
     {
         return [
             'fileName' => $this->fileName,

@@ -1,7 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\DocblockParser;
 
+/**
+ * Class ParamTag
+ * @package PhpDocBlockChecker\DocblockParser
+ */
 class ParamTag extends Tag
 {
     /**
@@ -22,7 +26,7 @@ class ParamTag extends Tag
      * @param string $name
      * @param string $value
      */
-    public function __construct($name, $value)
+    public function __construct(string $name, string $value)
     {
         parent::__construct($name, $value);
 
@@ -32,15 +36,15 @@ class ParamTag extends Tag
             return;
         }
 
-        $this->type = isset($parts[0]) ? $parts[0] : '';
-        $this->var = isset($parts[1]) ? $parts[1] : '';
-        $this->desc = isset($parts[2]) ? $parts[2] : '';
+        $this->type = $parts[0] ?? '';
+        $this->var = $parts[1] ?? '';
+        $this->desc = $parts[2] ?? '';
     }
 
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
@@ -48,7 +52,7 @@ class ParamTag extends Tag
     /**
      * @return string
      */
-    public function getVar()
+    public function getVar(): string
     {
         return $this->var;
     }
@@ -56,7 +60,7 @@ class ParamTag extends Tag
     /**
      * @return string
      */
-    public function getDesc()
+    public function getDesc(): string
     {
         return $this->desc;
     }

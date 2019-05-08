@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Config;
 
@@ -9,7 +9,7 @@ namespace PhpDocBlockChecker\Config;
 class Config
 {
     /**
-     * @var array
+     * @var string[]
      */
     private $exclude = [];
     /**
@@ -60,28 +60,77 @@ class Config
      * @var string
      */
     private $cacheFile;
+    /**
+     * @var bool
+     */
+    private $simpleProgress = false;
 
     /**
-     * @param array $data
+     * @param mixed[] $data
      * @return Config
      */
-    public static function fromArray(array $data)
+    public static function fromArray(array $data): Config
     {
         $self = new self();
 
-        foreach ($data as $key => $value) {
-            if (property_exists($self, $key)) {
-                $self->$key = $value;
-            }
-        }
+        $data = self::validate($data);
+
+        $self->exclude = $data['exclude'] ?? $self->exclude;
+        $self->directory = $data['directory'] ?? $self->directory;
+        $self->skipClasses = $data['skip-classes'] ?? $self->skipClasses;
+        $self->skipMethods = $data['skip-methods'] ?? $self->skipMethods;
+        $self->skipSignatures = $data['skip-signatures'] ?? $self->skipSignatures;
+        $self->onlySignatures = $data['only-signatures'] ?? $self->onlySignatures;
+        $self->json = $data['json'] ?? $self->json;
+        $self->verbose = $data['verbose'] ?? $self->verbose;
+        $self->filesPerLine = $data['files-per-line'] ?? $self->filesPerLine;
+        $self->failOnWarnings = $data['fail-on-warnings'] ?? $self->failOnWarnings;
+        $self->infoOnly = $data['info-only'] ?? $self->infoOnly;
+        $self->fromStdin = $data['from-stdin'] ?? $self->fromStdin;
+        $self->cacheFile = $data['cache-file'] ?? $self->cacheFile;
+        $self->simpleProgress = $data['simple-progress'] ?? $self->simpleProgress;
 
         return $self;
     }
 
     /**
-     * @return array
+     * @param mixed[] $config
+     * @return mixed[]
      */
-    public function getExclude()
+    private static function validate(array $config): array
+    {
+        // Check base path ends with a slash:
+
+        if (isset($config['directory']) && substr($config['directory'], -1) !== '/') {
+            $config['directory'] .= '/';
+        }
+
+        if (isset($config['exclude']) && !is_array($config['exclude'])) {
+            $config['exclude'] = array_map('trim', explode(',', $config['exclude']));
+        }
+
+        if (isset($config['json'])) {
+            $isJson = (bool)$config['json'];
+            $config['json'] = $isJson;
+            $config['verbose'] = !$isJson;
+        }
+
+        // Fix conflicting options:
+        if (isset($config['only-signatures'])) {
+            $isOnlySignatures = (bool)$config['only-signatures'];
+            $config['only-signatures'] = $isOnlySignatures;
+            if ($isOnlySignatures) {
+                $config['skip-signatures'] = false;
+            }
+        }
+
+        return $config;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getExclude(): array
     {
         return $this->exclude;
     }
@@ -89,7 +138,7 @@ class Config
     /**
      * @return string
      */
-    public function getDirectory()
+    public function getDirectory(): string
     {
         return $this->directory;
     }
@@ -97,7 +146,7 @@ class Config
     /**
      * @return bool
      */
-    public function isSkipClasses()
+    public function isSkipClasses(): bool
     {
         return $this->skipClasses;
     }
@@ -105,7 +154,7 @@ class Config
     /**
      * @return bool
      */
-    public function isSkipMethods()
+    public function isSkipMethods(): bool
     {
         return $this->skipMethods;
     }
@@ -113,7 +162,7 @@ class Config
     /**
      * @return bool
      */
-    public function isSkipSignatures()
+    public function isSkipSignatures(): bool
     {
         return $this->skipSignatures;
     }
@@ -121,7 +170,7 @@ class Config
     /**
      * @return bool
      */
-    public function isOnlySignatures()
+    public function isOnlySignatures(): bool
     {
         return $this->onlySignatures;
     }
@@ -129,7 +178,7 @@ class Config
     /**
      * @return bool
      */
-    public function isJson()
+    public function isJson(): bool
     {
         return $this->json;
     }
@@ -137,7 +186,7 @@ class Config
     /**
      * @return bool
      */
-    public function isVerbose()
+    public function isVerbose(): bool
     {
         return $this->verbose;
     }
@@ -145,7 +194,7 @@ class Config
     /**
      * @return int
      */
-    public function getFilesPerLine()
+    public function getFilesPerLine(): int
     {
         return $this->filesPerLine;
     }
@@ -153,7 +202,7 @@ class Config
     /**
      * @return bool
      */
-    public function isFailOnWarnings()
+    public function isFailOnWarnings(): bool
     {
         return $this->failOnWarnings;
     }
@@ -161,7 +210,7 @@ class Config
     /**
      * @return bool
      */
-    public function isInfoOnly()
+    public function isInfoOnly(): bool
     {
         return $this->infoOnly;
     }
@@ -169,7 +218,7 @@ class Config
     /**
      * @return bool
      */
-    public function isFromStdin()
+    public function isFromStdin(): bool
     {
         return $this->fromStdin;
     }
@@ -177,8 +226,16 @@ class Config
     /**
      * @return string
      */
-    public function getCacheFile()
+    public function getCacheFile(): ?string
     {
         return $this->cacheFile;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSimpleProgress(): bool
+    {
+        return $this->simpleProgress;
     }
 }

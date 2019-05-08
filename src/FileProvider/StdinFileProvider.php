@@ -1,7 +1,15 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\FileProvider;
 
+use ArrayIterator;
+use SplFileInfo;
+use Traversable;
+
+/**
+ * Class StdinFileProvider
+ * @package PhpDocBlockChecker\FileProvider
+ */
 class StdinFileProvider implements FileProviderInterface
 {
     use ExcludeFileTrait;
@@ -14,7 +22,7 @@ class StdinFileProvider implements FileProviderInterface
     /**
      * StdinFileProvider constructor.
      * @param resource $handle
-     * @param array $excludes
+     * @param string[] $excludes
      */
     public function __construct($handle, array $excludes)
     {
@@ -25,12 +33,17 @@ class StdinFileProvider implements FileProviderInterface
     public function __destruct()
     {
         // Close the file handle if its still open
-        if ($this->fileHandleOpen()) {
-            fclose($this->handle);
+        if (!$this->fileHandleOpen()) {
+            return;
         }
+
+        fclose($this->handle);
     }
 
-    private function fileHandleOpen()
+    /**
+     * @return bool
+     */
+    private function fileHandleOpen(): bool
     {
         $types = ['file' => 'file', 'stream' => 'stream'];
 
@@ -38,24 +51,24 @@ class StdinFileProvider implements FileProviderInterface
     }
 
     /**
-     * @return \ArrayIterator
+     * @return ArrayIterator
      */
-    public function getFileIterator()
+    public function getFileIterator(): Traversable
     {
         if (!$this->fileHandleOpen()) {
-            return new \ArrayIterator();
+            return new ArrayIterator();
         }
 
         $files = [];
         while (($line = fgets($this->handle)) !== false) {
             $line = rtrim($line, "\r\n");
-            $file = new \SplFileInfo($line);
+            $file = new SplFileInfo($line);
             if ($this->isFileExcluded('', $file)) {
                 continue;
             }
             $files[] = $file;
         }
 
-        return new \ArrayIterator($files);
+        return new ArrayIterator($files);
     }
 }

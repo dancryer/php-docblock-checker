@@ -2,9 +2,11 @@
 
 namespace PhpDocBlockChecker\FileProvider;
 
-class StdinFileProviderTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class StdinFileProviderTest extends TestCase
 {
-    public function testGetFileIterator()
+    public function testGetFileIterator(): void
     {
         $handle = fopen('php://memory', 'wb+');
         fwrite($handle, "test\ntest.php\ntest2.php\ntest3/test.php");

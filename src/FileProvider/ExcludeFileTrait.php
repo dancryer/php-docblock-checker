@@ -1,21 +1,26 @@
-<?php
-
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\FileProvider;
 
+use SplFileInfo;
+
+/**
+ * Trait ExcludeFileTrait
+ * @package PhpDocBlockChecker\FileProvider
+ */
 trait ExcludeFileTrait
 {
     /**
-     * @var array
+     * @var string[]
      */
     protected $excludes = [];
 
     /**
      * @param string $baseDirectory
-     * @param \SplFileInfo $file
+     * @param SplFileInfo $file
      * @return bool
      */
-    protected function isFileExcluded($baseDirectory, \SplFileInfo $file)
+    protected function isFileExcluded(string $baseDirectory, SplFileInfo $file): bool
     {
         if ($file->getExtension() !== 'php') {
             return true;

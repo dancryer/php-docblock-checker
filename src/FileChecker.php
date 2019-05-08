@@ -1,15 +1,20 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker;
 
+use PhpDocBlockChecker\CacheProvider\CacheProviderInterface;
 use PhpDocBlockChecker\Check\Checker;
 use PhpDocBlockChecker\FileParser\FileParser;
 use PhpDocBlockChecker\Status\FileStatus;
 
+/**
+ * Class FileChecker
+ * @package PhpDocBlockChecker
+ */
 class FileChecker
 {
     /**
-     * @var FileInfoCacheProvider
+     * @var CacheProviderInterface
      */
     private $cache;
     /**
@@ -23,11 +28,11 @@ class FileChecker
 
     /**
      * FileChecker constructor.
-     * @param FileInfoCacheProvider $cache
+     * @param CacheProviderInterface $cache
      * @param FileParser $fileParser
      * @param Checker $checker
      */
-    public function __construct(FileInfoCacheProvider $cache, FileParser $fileParser, Checker $checker)
+    public function __construct(CacheProviderInterface $cache, FileParser $fileParser, Checker $checker)
     {
         $this->cache = $cache;
         $this->fileParser = $fileParser;
@@ -38,7 +43,7 @@ class FileChecker
      * @param string $fileName
      * @return FileStatus
      */
-    public function checkFile($fileName)
+    public function checkFile(string $fileName): FileStatus
     {
         $file = $this->getFileDetails($fileName);
 
@@ -49,7 +54,7 @@ class FileChecker
      * @param string $fileName
      * @return FileInfo
      */
-    private function getFileDetails($fileName)
+    private function getFileDetails(string $fileName): FileInfo
     {
         if ($this->cache->exists($fileName)) {
             $cachedFile = $this->cache->get($fileName);

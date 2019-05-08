@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 /**
  * PHP Docblock Checker
  *
@@ -9,17 +10,19 @@
 
 namespace PhpDocBlockChecker\Command;
 
+use PhpDocBlockChecker\CacheProvider\CacheProviderFactory;
 use PhpDocBlockChecker\Check\Checker;
 use PhpDocBlockChecker\Config\ConfigParser;
 use PhpDocBlockChecker\Config\ConfigProcessor;
 use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpDocBlockChecker\FileChecker;
-use PhpDocBlockChecker\FileInfoCacheProvider;
 use PhpDocBlockChecker\FileParser\FileParser;
 use PhpDocBlockChecker\FileProvider\FileProviderFactory;
 use PhpDocBlockChecker\Status\StatusCollection;
 use PhpParser\ParserFactory;
+use SplFileInfo;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -31,14 +34,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 class CheckerCommand extends Command
 {
     /**
-     * @var array
-     */
-    protected $cache;
-
-    /**
      * Configure the console command, add options, etc.
      */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('check')
@@ -122,6 +120,12 @@ class CheckerCommand extends Command
                 null,
                 InputOption::VALUE_REQUIRED,
                 'File to read doccheck config from in yml format'
+            )
+            ->addOption(
+                'simple-progress',
+                null,
+                InputOption::VALUE_NONE,
+                'Display a simple progress bar'
             );
     }
 
@@ -131,23 +135,25 @@ class CheckerCommand extends Command
      * @param OutputInterface $output
      * @return int
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $startTime = microtime(true);
 
-        $config = (new ConfigProcessor(new ConfigParser($input, $this->getDefinition())))->processConfig();
+        $config = (new ConfigProcessor(
+            new ConfigParser($input, $this->getDefinition()),
+            $this->getDefinition()
+        )
+        )->processConfig();
 
         // Get files to check:
         $files = FileProviderFactory::getFileProvider($config)->getFileIterator();
 
         // Check files:
-        $filesPerLine = $config->getFilesPerLine();
         $totalFiles = iterator_count($files);
-        //$files = array_chunk($files, $filesPerLine);
         $processed = 0;
 
         $fileChecker = new FileChecker(
-            new FileInfoCacheProvider($config->getCacheFile()),
+            CacheProviderFactory::getCacheProvider($config->getCacheFile()),
             new FileParser(
                 (new ParserFactory())->create(ParserFactory::PREFER_PHP7),
                 new DocblockParser()
@@ -161,9 +167,13 @@ class CheckerCommand extends Command
             $output->writeln('');
             $output->writeln('PHP Docblock Checker <fg=blue>by Dan Cryer (https://www.dancryer.com)</>');
             $output->writeln('');
+
+            if ($config->isSimpleProgress()) {
+                $progress = new ProgressBar($output, $totalFiles);
+            }
         }
 
-        /** @var \SplFileInfo $file */
+        /** @var SplFileInfo $file */
         foreach ($files as $file) {
             $processed++;
 
@@ -171,29 +181,37 @@ class CheckerCommand extends Command
             $statusCollection->addFileStatus($status);
 
             if ($config->isVerbose()) {
-                if ($status->hasErrors()) {
-                    $output->write('<fg=red>F</>');
-                } elseif ($status->hasWarnings()) {
-                    $output->write('<fg=yellow>W</>');
+                if ($config->isSimpleProgress() && isset($progress)) {
+                    $progress->advance();
                 } else {
-                    $output->write('<info>.</info>');
+                    if ($status->hasErrors()) {
+                        $output->write('<fg=red>F</>');
+                    } elseif ($status->hasWarnings()) {
+                        $output->write('<fg=yellow>W</>');
+                    } else {
+                        $output->write('<info>.</info>');
+                    }
+                    if ($processed % $config->getFilesPerLine() === 0) {
+                        $output->writeln(
+                            sprintf(
+                                '%s %s/%d (%d%%)',
+                                str_pad('', $config->getFilesPerLine() - $processed),
+                                str_pad((string)$processed, strlen((string)$totalFiles), ' ', STR_PAD_LEFT),
+                                $totalFiles,
+                                floor((100 / $totalFiles) * $processed)
+                            )
+                        );
+                    }
                 }
-            }
-
-            if ($processed % $config->getFilesPerLine() === 0 && $config->isVerbose()) {
-                $output->writeln(
-                    sprintf(
-                        '%s %s/%d (%d%%)',
-                        str_pad('', $filesPerLine - $processed),
-                        str_pad((string)$processed, strlen((string)$totalFiles), ' ', STR_PAD_LEFT),
-                        $totalFiles,
-                        floor((100 / $totalFiles) * $processed)
-                    )
-                );
             }
         }
 
+
         if ($config->isVerbose()) {
+            if ($config->isSimpleProgress() && isset($progress)) {
+                $progress->finish();
+            }
+
             $time = round(microtime(true) - $startTime, 2);
             $output->writeln('');
             $output->writeln('');

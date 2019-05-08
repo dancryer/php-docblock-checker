@@ -1,12 +1,19 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\FileProvider;
 
+use FilterIterator;
 use Iterator;
 
-class FileExclusionFilter extends \FilterIterator
+/**
+ * Class FileExclusionFilter
+ * @package PhpDocBlockChecker\FileProvider
+ */
+class FileExclusionFilter extends FilterIterator
 {
+
     use ExcludeFileTrait;
+
     /**
      * @var string
      */
@@ -16,9 +23,9 @@ class FileExclusionFilter extends \FilterIterator
      * FileExclusionFilter constructor.
      * @param Iterator $iterator
      * @param string $baseDirectory
-     * @param array $excludes
+     * @param string[] $excludes
      */
-    public function __construct(Iterator $iterator, $baseDirectory, array $excludes)
+    public function __construct(Iterator $iterator, string $baseDirectory, array $excludes)
     {
         parent::__construct($iterator);
         $this->baseDirectory = $baseDirectory;
@@ -31,7 +38,7 @@ class FileExclusionFilter extends \FilterIterator
      * @return bool true if the current element is acceptable, otherwise false.
      * @since 5.1.0
      */
-    public function accept()
+    public function accept(): bool
     {
         $file = $this->getInnerIterator()->current();
         return !$this->isFileExcluded($this->baseDirectory, $file);

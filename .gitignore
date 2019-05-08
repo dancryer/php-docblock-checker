@@ -4,5 +4,6 @@ vendor
 phpdoccheck.phar
 .phpdoccheck
 .phpcs-cache
+.phpunit.result.cache
 profiling/report
 composer.lock

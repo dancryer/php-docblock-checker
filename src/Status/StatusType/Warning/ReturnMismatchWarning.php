@@ -1,7 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Status\StatusType\Warning;
 
+/**
+ * Class ReturnMismatchWarning
+ * @package PhpDocBlockChecker\Status\StatusType\Warning
+ */
 class ReturnMismatchWarning extends Warning
 {
     /**
@@ -26,7 +30,14 @@ class ReturnMismatchWarning extends Warning
      * @param string $returnType
      * @param string $docType
      */
-    public function __construct($file, $class, $line, $method, $returnType, $docType)
+    public function __construct(
+        string $file,
+        string $class,
+        int $line,
+        string $method,
+        string $returnType,
+        string $docType
+    )
     {
         parent::__construct($file, $class, $line);
         $this->method = $method;
@@ -37,7 +48,7 @@ class ReturnMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return 'return-mismatch';
     }
@@ -45,7 +56,7 @@ class ReturnMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getMethod()
+    public function getMethod(): string
     {
         return $this->method;
     }
@@ -53,7 +64,7 @@ class ReturnMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getReturnType()
+    public function getReturnType(): string
     {
         return $this->returnType;
     }
@@ -61,7 +72,7 @@ class ReturnMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getDocType()
+    public function getDocType(): string
     {
         return $this->docType;
     }
@@ -69,7 +80,7 @@ class ReturnMismatchWarning extends Warning
     /**
      * @return string
      */
-    public function getDecoratedMessage()
+    public function getDecoratedMessage(): string
     {
         return parent::getDecoratedMessage() . '<info>' . $this->method .
             '</info> - @return <fg=blue>' . $this->docType .

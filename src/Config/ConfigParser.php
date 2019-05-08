@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Config;
 
@@ -12,15 +12,18 @@ use Symfony\Component\Yaml\Yaml;
  */
 class ConfigParser
 {
-    const DEFAULT_CONFIG_FILE = 'phpdoccheck.yml';
+    private const DEFAULT_CONFIG_FILE = 'phpdoccheck.yml';
     /**
      * @var InputInterface
      */
     private $input;
     /**
-     * @var array
+     * @var mixed[]
      */
     private $fileConfig;
+    /**
+     * @var InputDefinition
+     */
     private $definition;
 
     /**
@@ -52,16 +55,16 @@ class ConfigParser
      * @param string $optionName
      * @return bool
      */
-    public function parseOption($optionName)
+    public function parseOption(string $optionName): bool
     {
-        return $this->input->getOption($optionName) || isset($this->fileConfig['options'][$optionName]);
+        return (bool)$this->input->getOption($optionName) || isset($this->fileConfig['options'][$optionName]);
     }
 
     /**
      * @param string $parameterName
      * @return mixed
      */
-    public function parseParameter($parameterName)
+    public function parseParameter(string $parameterName)
     {
         $defaultValue = $this->definition->getOption($parameterName)->getDefault();
         $inputValue = $this->input->getOption($parameterName);
@@ -83,19 +86,16 @@ class ConfigParser
      * @param string $parameterName
      * @return mixed|null
      */
-    private function getFileValue($parameterName)
+    private function getFileValue(string $parameterName)
     {
-        if (isset($this->fileConfig[$parameterName])) {
-            return $this->fileConfig[$parameterName];
-        }
-        return null;
+        return $this->fileConfig[$parameterName] ?? null;
     }
 
     /**
      * @param string $configFile
-     * @return array
+     * @return mixed[]
      */
-    private function parseConfigFile($configFile)
+    private function parseConfigFile(string $configFile): array
     {
         if (!file_exists($configFile)) {
             return ['options' => []];

@@ -1,7 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PhpDocBlockChecker\Status\StatusType\Warning;
 
+/**
+ * Class ParamMissingWarning
+ * @package PhpDocBlockChecker\Status\StatusType\Warning
+ */
 class ParamMissingWarning extends Warning
 {
     /**
@@ -21,7 +25,7 @@ class ParamMissingWarning extends Warning
      * @param string $method
      * @param string $param
      */
-    public function __construct($file, $class, $line, $method, $param)
+    public function __construct(string $file, string $class, int $line, string $method, string $param)
     {
         parent::__construct($file, $class, $line);
         $this->method = $method;
@@ -31,7 +35,7 @@ class ParamMissingWarning extends Warning
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return 'param-missing';
     }
@@ -39,7 +43,7 @@ class ParamMissingWarning extends Warning
     /**
      * @return string
      */
-    public function getMethod()
+    public function getMethod(): string
     {
         return $this->method;
     }
@@ -47,7 +51,7 @@ class ParamMissingWarning extends Warning
     /**
      * @return string
      */
-    public function getParam()
+    public function getParam(): string
     {
         return $this->param;
     }
@@ -55,7 +59,7 @@ class ParamMissingWarning extends Warning
     /**
      * @return string
      */
-    public function getDecoratedMessage()
+    public function getDecoratedMessage(): string
     {
         return parent::getDecoratedMessage() . '<info>' . $this->method .
             '</info> - @param <fg=blue>' . $this->param . '</> missing.';
