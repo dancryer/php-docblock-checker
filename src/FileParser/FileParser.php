@@ -159,11 +159,11 @@ class FileParser
                 foreach ($method->params as $param) {
                     $type = $param->type;
 
-                    if ($type instanceof NullableType) {
-                        $type = $type->type->toString();
-                    } elseif ($type !== null) {
-                        $type = $type->toString();
-                    }
+                        if ($type instanceof NullableType) {
+                            $type = $type->type->toString();
+                        } elseif ($type instanceof NodeAbstract) {
+                            $type = $type->toString();
+                        }
 
                     if (isset($uses[$type])) {
                         $type = $uses[$type];
