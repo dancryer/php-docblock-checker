@@ -46,7 +46,7 @@ class ReturnCheck extends Check
                     }
                 }
 
-                if ($method['docblock']['return'] !== $method['return']) {
+                if (!is_array($method['return']) && $method['docblock']['return'] !== $method['return']) {
                     if ($method['return'] === 'array' && substr($method['docblock']['return'], -2) === '[]') {
                         // Do nothing because this is fine.
                     } else {
