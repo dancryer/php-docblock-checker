@@ -166,12 +166,13 @@ class FileParser
                             $type = strpos($type, '\\') === 0 ? substr($type, 1) : $type;
                         }
 
-                        if (property_exists($param, 'default') &&
+                        if ((property_exists($param, 'default') &&
                             $param->default instanceof Expr &&
                             property_exists($param->default, 'name') &&
                             property_exists($param->default->name, 'parts') &&
                             $type !== null &&
-                            'null' === $param->default->name->parts[0]
+                            'null' === $param->default->name->parts[0]) ||
+                            $param->type instanceof NullableType
                         ) {
                             $type .= '|null';
                         }
