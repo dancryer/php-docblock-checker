@@ -50,16 +50,18 @@ class ReturnCheck extends Check
                     if ($method['return'] === 'array' && substr($method['docblock']['return'], -2) === '[]') {
                         // Do nothing because this is fine.
                     } else {
-                        $this->fileStatus->add(
-                            new ReturnMismatchWarning(
-                                $file->getFileName(),
-                                $name,
-                                $method['line'],
-                                $name,
-                                $method['return'],
-                                $method['docblock']['return']
-                            )
-                        );
+                        if (!is_array($method['return']) || !$this->checkMultipleReturnStatements($method)) {
+                            $this->fileStatus->add(
+                                new ReturnMismatchWarning(
+                                    $file->getFileName(),
+                                    $name,
+                                    $method['line'],
+                                    $name,
+                                    $method['return'],
+                                    $method['docblock']['return']
+                                )
+                            );
+                        }
                     }
                 }
             }
@@ -72,5 +74,17 @@ class ReturnCheck extends Check
     public function enabled()
     {
         return !$this->config->isSkipSignatures();
+    }
+
+    /**
+     * @param array $method
+     * @return bool
+     */
+    private function checkMultipleReturnStatements(array $method): bool
+    {
+        $dockReturn = explode('|', $method['docblock']['return']);
+        $methodReturn = $method['return'];
+
+        return count(array_diff($dockReturn, $methodReturn)) == 0 && count(array_diff($methodReturn, $dockReturn)) == 0;
     }
 }
