@@ -7,35 +7,57 @@ use PhpParser\ParserFactory;
 
 class FileParserTest extends \PHPUnit_Framework_TestCase
 {
+    protected $filePath = __DIR__ . '/TestClass.php';
+    protected $fileInfo;
 
-    public function testParseFile()
+    protected function setUp()
     {
         $fileParser = new FileParser(
             (new ParserFactory())->create(ParserFactory::PREFER_PHP7),
             new DocblockParser()
         );
 
-        $filePath = __DIR__ . '/TestClass.php';
+        $this->fileInfo = $fileParser->parseFile($this->filePath);
+    }
 
-        $fileInfo = $fileParser->parseFile($filePath);
+    public function testFileLoaded()
+    {
+        $this->assertEquals($this->filePath, $this->fileInfo->getFileName());
+    }
 
-        $this->assertEquals($filePath, $fileInfo->getFileName());
-        $class = $fileInfo->getClasses()['PhpDocBlockChecker\FileParser\TestClass'];
+    public function testClassLoaded()
+    {
+        $classes = $this->fileInfo->getClasses();
+        $this->assertCount(1, $classes);
 
+        $class = $classes['PhpDocBlockChecker\FileParser\TestClass'];
         $this->assertEquals('PhpDocBlockChecker\FileParser\TestClass', $class['name']);
         $this->assertEquals(null, $class['docblock']);
+    }
 
-        $methodFoo = $fileInfo->getMethods()['PhpDocBlockChecker\FileParser\TestClass::foo'];
+    public function testWithNoReturn()
+    {
+        $method = $this->fileInfo->getMethods()['PhpDocBlockChecker\FileParser\TestClass::emptyMethod'];
+        $this->assertFalse($method['has_return']);
+        $this->assertEquals(null, $method['return']);
+    }
 
-        $this->assertFalse($methodFoo['has_return']);
-        $this->assertEmpty($methodFoo['params']);
+    public function testWithNoParams()
+    {
+        $method = $this->fileInfo->getMethods()['PhpDocBlockChecker\FileParser\TestClass::emptyMethod'];
+        $this->assertEmpty($method['params']);
+    }
 
-        $methodBar = $fileInfo->getMethods()['PhpDocBlockChecker\FileParser\TestClass::bar'];
-        $this->assertFalse($methodBar['has_return']);
-        $this->assertEquals(['$foo' => null, '$bar' => null, '$baz' => null,], $methodBar['params']);
+    public function testWithParams()
+    {
+        $method = $this->fileInfo->getMethods()['PhpDocBlockChecker\FileParser\TestClass::withParams'];
+        $this->assertEquals(['$foo' => null, '$bar' => null, '$baz' => null,], $method['params']);
+    }
 
-        $methodBaz = $fileInfo->getMethods()['PhpDocBlockChecker\FileParser\TestClass::baz'];
-        $this->assertTrue($methodBaz['has_return']);
-        $this->assertEmpty($methodBaz['params']);
+    public function testWithReturn()
+    {
+        $method = $this->fileInfo->getMethods()['PhpDocBlockChecker\FileParser\TestClass::withReturn'];
+        $this->assertTrue($method['has_return']);
+        $this->assertEquals(null, $method['return']);
     }
 }
