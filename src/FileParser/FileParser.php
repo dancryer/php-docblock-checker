@@ -286,7 +286,8 @@ class FileParser
 
                     $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
                 }
-                $rtn['return'] = implode('|', $types);
+                sort($types);
+                $rtn['return'] = count($types) === 1 ? $types[0] : $types;
             }
         }
 

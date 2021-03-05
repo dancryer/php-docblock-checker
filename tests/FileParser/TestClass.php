@@ -4,16 +4,16 @@ namespace PhpDocBlockChecker\FileParser;
 
 class TestClass
 {
-    public function foo()
+    public function emptyMethod()
     {
     }
 
-    public function bar($foo, $bar, $baz)
+    public function withParams($foo, $bar, $baz)
     {
     }
 
-    public function baz()
+    public function withReturn()
     {
-        return true;
+        return 'test';
     }
 }

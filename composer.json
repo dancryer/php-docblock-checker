@@ -49,7 +49,7 @@
     }
   },
   "scripts": {
-    "lint": "parallel-lint -e php --exclude vendor .",
+    "lint": "parallel-lint -e php --exclude vendor --exclude tests/FileParser/TestClassPhp7.php .",
     "test": "phpunit",
     "doccheck": "./bin/phpdoccheck",
     "phpcs": "phpcs --extensions=php --cache=.phpcs-cache",

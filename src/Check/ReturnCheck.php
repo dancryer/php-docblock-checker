@@ -15,53 +15,40 @@ class ReturnCheck extends Check
     public function check(FileInfo $file)
     {
         foreach ($file->getMethods() as $name => $method) {
-            if (!empty($method['return'])) {
-                if (empty($method['docblock']['return'])) {
-                    $this->fileStatus->add(
-                        new ReturnMissingWarning(
-                            $file->getFileName(),
-                            $name,
-                            $method['line'],
-                            $name
-                        )
-                    );
-                    continue;
-                }
+            if (empty($method['return'])) {
+                // Nothing to check.
+                continue;
+            }
 
-                if (is_array($method['return'])) {
-                    $docblockTypes = explode('|', $method['docblock']['return']);
-                    sort($docblockTypes);
-                    if ($method['return'] !== $docblockTypes) {
-                        $this->fileStatus->add(
-                            new ReturnMismatchWarning(
-                                $file->getFileName(),
-                                $name,
-                                $method['line'],
-                                $name,
-                                implode('|', $method['return']),
-                                $method['docblock']['return']
-                            )
-                        );
-                        continue;
-                    }
-                }
+            if (empty($method['docblock']['return'])) {
+                $this->fileStatus->add(
+                    new ReturnMissingWarning(
+                        $file->getFileName(),
+                        $name,
+                        $method['line'],
+                        $name
+                    )
+                );
+                continue;
+            }
 
-                if ($method['docblock']['return'] !== $method['return']) {
-                    if ($method['return'] === 'array' && substr($method['docblock']['return'], -2) === '[]') {
-                        // Do nothing because this is fine.
-                    } else {
-                        $this->fileStatus->add(
-                            new ReturnMismatchWarning(
-                                $file->getFileName(),
-                                $name,
-                                $method['line'],
-                                $name,
-                                $method['return'],
-                                $method['docblock']['return']
-                            )
-                        );
-                    }
-                }
+            if ($method['return'] === 'array' && substr($method['docblock']['return'], -2) === '[]') {
+                // Do nothing because this is fine.
+                continue;
+            }
+
+            if ($method['return'] !== $method['docblock']['return']) {
+                $this->fileStatus->add(
+                    new ReturnMismatchWarning(
+                        $file->getFileName(),
+                        $name,
+                        $method['line'],
+                        $name,
+                        is_array($method['return']) ? implode('|', $method['return']) : $method['return'],
+                        $method['docblock']['return']
+                    )
+                );
+                continue;
             }
         }
     }
