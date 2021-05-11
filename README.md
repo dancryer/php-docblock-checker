@@ -4,7 +4,7 @@ Check PHP files within a directory for appropriate use of Docblocks.
 ## Installation
 **Composer**:<br>
 <code>
-composer require block8/php-docblock-checker
+composer require dancryer/php-docblock-checker
 </code>
 
 ## Usage
