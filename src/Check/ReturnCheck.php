@@ -32,20 +32,26 @@ class ReturnCheck extends Check
                 continue;
             }
 
-            if ($method['return'] === 'array' && substr($method['docblock']['return'], -2) === '[]') {
+            $returnTypes = $method['docblock']['return'];
+            $methodTypes = $method['return'];
+
+            if ($method['return'] === 'array'
+                && !is_array($returnTypes)
+                && substr($returnTypes, -2) === '[]'
+            ) {
                 // Do nothing because this is fine.
                 continue;
             }
 
-            if ($method['return'] !== $method['docblock']['return']) {
+            if ($methodTypes !== $returnTypes) {
                 $this->fileStatus->add(
                     new ReturnMismatchWarning(
                         $file->getFileName(),
                         $name,
                         $method['line'],
                         $name,
-                        is_array($method['return']) ? implode('|', $method['return']) : $method['return'],
-                        $method['docblock']['return']
+                        is_array($methodTypes) ? implode('|', $methodTypes) : $methodTypes,
+                        is_array($returnTypes) ? implode('|', $returnTypes) : $returnTypes
                     )
                 );
                 continue;
