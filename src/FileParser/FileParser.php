@@ -6,6 +6,7 @@ use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpDocBlockChecker\DocblockParser\ReturnTag;
 use PhpDocBlockChecker\FileInfo;
 use PhpParser\Comment\Doc;
+use PhpParser\Node\ComplexType;
 use PhpParser\Node\Expr;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
@@ -14,6 +15,7 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Namespace_;
 use PhpParser\Node\Stmt\Use_;
+use PhpParser\Node\UnionType;
 use PhpParser\NodeAbstract;
 use PhpParser\Parser;
 
@@ -120,6 +122,8 @@ class FileParser
 
                     if ($type instanceof NullableType) {
                         $type = $type->type->toString();
+                    } elseif ($type instanceof UnionType) {
+                        $type = trim(implode('|', $type->types));
                     } elseif ($type instanceof NodeAbstract) {
                         $type = $type->toString();
                     }
@@ -154,6 +158,8 @@ class FileParser
 
                         if ($type instanceof NullableType) {
                             $type = $type->type->toString();
+                        } elseif ($type instanceof UnionType) {
+                            $type = trim(implode('|', $type->types));
                         } elseif ($type instanceof NodeAbstract) {
                             $type = $type->toString();
                         }
