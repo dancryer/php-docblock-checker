@@ -6,7 +6,6 @@ use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpDocBlockChecker\DocblockParser\ReturnTag;
 use PhpDocBlockChecker\FileInfo;
 use PhpParser\Comment\Doc;
-use PhpParser\Node\ComplexType;
 use PhpParser\Node\Expr;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Param;
