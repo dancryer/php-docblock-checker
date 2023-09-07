@@ -2,27 +2,20 @@
 Check PHP files within a directory for appropriate use of Docblocks. This is a fork of the original work from @dancryer but just adding support for newer php features
 
 ## Installation
-**Composer**:<br>
-<code>
-composer require neild3r/php-docblock-checker
-</code>
+### Composer
+`composer require neild3r/php-docblock-checker`
 
 ## Usage
-**CMD**:<br>
-<code>
-call vendor/bin/phpdoccheck {params}
-</code>
+### CMD
+`call vendor/bin/phpdoccheck {params}`
 
 To validate changed files in the last git commit:
 
-<code>
-git diff --name-only HEAD HEAD^ | ./vendor/bin/phpdoccheck --from-stdin
-</code>
+`git diff --name-only HEAD HEAD^ | ./vendor/bin/phpdoccheck --from-stdin`
 
 If used within a travis context, this may be useful:
-<code>
-git diff --name-only ${TRAVIS_COMMIT_RANGE:-"HEAD^"} | ./vendor/bin/phpdoccheck --from-stdin
-</code>
+
+`git diff --name-only ${TRAVIS_COMMIT_RANGE:-"HEAD^"} | ./vendor/bin/phpdoccheck --from-stdin`
 
 ## Parameters
 
