@@ -1,10 +1,10 @@
 # PHP DocBlock Checker
-Check PHP files within a directory for appropriate use of Docblocks.
+Check PHP files within a directory for appropriate use of Docblocks. This is a fork of the original work from @dancryer but just adding support for newer php features
 
 ## Installation
 **Composer**:<br>
 <code>
-composer require dancryer/php-docblock-checker
+composer require neild3r/php-docblock-checker
 </code>
 
 ## Usage
