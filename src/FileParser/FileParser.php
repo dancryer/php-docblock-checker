@@ -142,6 +142,7 @@ class FileParser
                     }
 
                     $thisMethod = [
+                        'namespace' => $prefix,
                         'file' => $file,
                         'class' => $fullClassName,
                         'name' => $fullMethodName,
@@ -190,6 +191,11 @@ class FileParser
                         // parser v4
                         if (null === $name && property_exists($param, 'var') && property_exists($param->var, 'name')) {
                             $name = $param->var->name;
+                        }
+
+
+                        if (property_exists($param, 'variadic') && $param->variadic) {
+                            $name .= ',...';
                         }
 
                         $thisMethod['params']['$' . $name] = $type;
