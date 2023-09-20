@@ -31,7 +31,7 @@ class FileExclusionFilter extends \FilterIterator
      * @return bool true if the current element is acceptable, otherwise false.
      * @since 5.1.0
      */
-    public function accept()
+    public function accept(): bool
     {
         $file = $this->getInnerIterator()->current();
         return !$this->isFileExcluded($this->baseDirectory, $file);

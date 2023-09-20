@@ -70,6 +70,7 @@ class FileInfo implements \JsonSerializable
         return $this->mtime;
     }
 
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return [
