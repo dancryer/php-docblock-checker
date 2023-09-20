@@ -193,7 +193,6 @@ class FileParser
                             $name = $param->var->name;
                         }
 
-
                         if (property_exists($param, 'variadic') && $param->variadic) {
                             $name .= ',...';
                         }
