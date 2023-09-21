@@ -15,27 +15,28 @@ class ReturnCheck extends Check
     public function check(FileInfo $file)
     {
         foreach ($file->getMethods() as $name => $method) {
-            if (empty($method['return'])) {
+            $docblock = $method->getDocblock();
+            if ($method->getReturnType() === null) {
                 // Nothing to check.
                 continue;
             }
 
-            if (empty($method['docblock']['return'])) {
+            if (empty($docblock['return'])) {
                 $this->fileStatus->add(
                     new ReturnMissingWarning(
                         $file->getFileName(),
                         $name,
-                        $method['line'],
+                        $method->getLine(),
                         $name
                     )
                 );
                 continue;
             }
 
-            $returnTypes = $method['docblock']['return'];
-            $methodTypes = $method['return'];
+            $returnTypes = $docblock['return'];
+            $methodTypes = $method->getReturnType();
 
-            if ($method['return'] === 'array'
+            if ($method->getReturnType() === 'array'
                 && !is_array($returnTypes)
                 && substr($returnTypes, -2) === '[]'
             ) {
@@ -48,9 +49,9 @@ class ReturnCheck extends Check
                     new ReturnMismatchWarning(
                         $file->getFileName(),
                         $name,
-                        $method['line'],
+                        $method->getLine(),
                         $name,
-                        is_array($methodTypes) ? implode('|', $methodTypes) : $methodTypes,
+                        $methodTypes->toString(),
                         is_array($returnTypes) ? implode('|', $returnTypes) : $returnTypes
                     )
                 );

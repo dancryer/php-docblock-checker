@@ -15,6 +15,21 @@ abstract class AbstractType extends AbstractClassCode
     /** @var array */
     protected $types = [];
 
+    /** @var bool */
+    protected $nullable = false;
+
+    /**
+     * @param bool $bool
+     * @return self
+     */
+    public function setNullable(bool $bool): self
+    {
+        $this->nullable = $bool;
+
+        return $this;
+    }
+
+
     /**
      * @param array $types
      * @return self
@@ -37,5 +52,23 @@ abstract class AbstractType extends AbstractClassCode
     {
         $this->types[] = new SubType($type, $this);
         return $this;
+    }
+
+    /**
+     * @return string
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function __toString()
+    {
+        return implode('|', $this->types);
+    }
+
+    /**
+     * @return string
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function toString(): string
+    {
+        return $this->__toString();
     }
 }

@@ -33,4 +33,13 @@ class SubType extends AbstractClassCode
         $this->parent = $parent;
         $this->type = $type;
     }
+
+    /**
+     * @return string
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function __toString()
+    {
+        return $this->type;
+    }
 }

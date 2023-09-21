@@ -3,6 +3,7 @@
 namespace PhpDocBlockChecker\FileParser;
 
 use PhpDocBlockChecker\Code\Method;
+use PhpDocBlockChecker\Code\Param as CodeParam;
 use PhpDocBlockChecker\Code\ReturnType;
 use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpDocBlockChecker\DocblockParser\ReturnTag;
@@ -128,14 +129,18 @@ class FileParser
                         ->setUses($uses);
 
                     if ($type instanceof NullableType) {
+                        $returnType
+                            ->addType($type->type->toString())
+                            ->setNullable(true);
                         $type = $type->type->toString();
-                        $returnType->addTypes([$type->type->toString(), 'null']);
                     } elseif ($type instanceof UnionType) {
-                        $returnType->addTypes($type->types);
+                        foreach ($type->types as $toAdd) {
+                            $returnType->addType($toAdd->toString());
+                        }
                         $type = trim(implode('|', $type->types));
                     } elseif ($type instanceof NodeAbstract) {
-                        $type = $type->toString();
                         $returnType->addType($type->toString());
+                        $type = $type->toString();
                     }
 
                     if (isset($uses[$type])) {
@@ -151,12 +156,14 @@ class FileParser
                         sort($type);
                     }
 
-                    $thisMethod = Method::factory()
+                    $methodObject = Method::factory()
                         ->setNamespace($prefix ?: null)
                         ->setClass($class->name)
+                        ->setName($method->name)
                         ->setUses($uses)
                         ->setLine($method->getAttribute('startLine'))
                         ->setReturnType($returnType)
+                        ->setDocBlock($this->getDocblock($method, $uses))
                         ->setHasReturn(isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false)
                         ;
 
@@ -177,11 +184,23 @@ class FileParser
                     foreach ($method->params as $param) {
                         $type = $param->type;
 
+                        $paramType = CodeParam::factory()
+                            ->setNamespace($prefix ?: null)
+                            ->setClass($class->name)
+                            ->setUses($uses);
+
                         if ($type instanceof NullableType) {
+                            $paramType
+                                ->addType($type->type->toString())
+                                ->setNullable(true);
                             $type = $type->type->toString();
                         } elseif ($type instanceof UnionType) {
+                            foreach ($type->types as $toAdd) {
+                                $paramType->addType($toAdd->toString());
+                            }
                             $type = trim(implode('|', $type->types));
                         } elseif ($type instanceof NodeAbstract) {
+                            $paramType->addType($type->toString());
                             $type = $type->toString();
                         }
 
@@ -201,6 +220,7 @@ class FileParser
                             'null' === $param->default->name->parts[0]
                         ) {
                             $type .= '|null';
+                            $paramType->setNullable(true);
                         }
 
                         $name = null;
@@ -212,15 +232,18 @@ class FileParser
                         if (null === $name && property_exists($param, 'var') && property_exists($param->var, 'name')) {
                             $name = $param->var->name;
                         }
+                        $paramType->setName($name);
 
                         if (property_exists($param, 'variadic') && $param->variadic) {
                             $name .= ',...';
+                            $paramType->setVariadic(true);
                         }
 
                         $thisMethod['params']['$' . $name] = $type;
+                        $methodObject->addParam($paramType);
                     }
 
-                    $methods[$fullMethodName] = $thisMethod;
+                    $methods[$fullMethodName] = $methodObject;
                 }
             }
         }

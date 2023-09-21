@@ -15,39 +15,40 @@ class ParamCheck extends Check
     public function check(FileInfo $file)
     {
         foreach ($file->getMethods() as $name => $method) {
+            $docblock = $method->getDocblock();
             // If the docblock is inherited, we can't check for params and return types:
-            if (isset($method['docblock']['inherit']) && $method['docblock']['inherit']) {
+            if (isset($docblock['inherit']) && $docblock['inherit']) {
                 continue;
             }
 
-            foreach ($method['params'] as $param => $type) {
-                if (!isset($method['docblock']['params'][$param])) {
+            foreach ($method->getParams() as $param => $type) {
+                if (!isset($docblock['params'][$param])) {
                     $this->fileStatus->add(
-                        new ParamMissingWarning($file->getFileName(), $name, $method['line'], $name, $param)
+                        new ParamMissingWarning($file->getFileName(), $name, $method->getLine(), $name, $param)
                     );
                     continue;
                 }
 
                 if (!empty($type)) {
-                    $docBlockTypes = explode('|', $method['docblock']['params'][$param]);
+                    $docBlockTypes = explode('|', $docblock['params'][$param]);
                     $methodTypes = explode('|', $type);
 
                     sort($docBlockTypes);
                     sort($methodTypes);
 
                     if ($docBlockTypes !== $methodTypes) {
-                        if ($type === 'array' && substr($method['docblock']['params'][$param], -2) === '[]') {
+                        if ($type === 'array' && substr($docblock['params'][$param], -2) === '[]') {
                             // Do nothing because this is fine.
                         } else {
                             $this->fileStatus->add(
                                 new ParamMismatchWarning(
                                     $file->getFileName(),
                                     $name,
-                                    $method['line'],
+                                    $method->getLine(),
                                     $name,
                                     $param,
                                     $type,
-                                    $method['docblock']['params'][$param]
+                                    $docblock['params'][$param]
                                 )
                             );
                         }

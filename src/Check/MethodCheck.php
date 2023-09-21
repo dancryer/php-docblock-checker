@@ -15,13 +15,14 @@ class MethodCheck extends Check
     {
         foreach ($file->getMethods() as $name => $method) {
             $treatAsError = true;
-            if (false === $method['has_return'] &&
+            $params = $method->getParams();
+            if (false === $method->hasReturn() &&
                 $this->config->isOnlySignatures() &&
-                (empty($method['params']) || 0 === count($method['params']))) {
+                (empty($params) || 0 === count($params))) {
                 $treatAsError = false;
             }
 
-            if ($method['docblock'] === null) {
+            if ($method->getDocblock() === null) {
                 if (true === $treatAsError) {
                     $this->fileStatus->add(new MethodError($file->getFileName(), $name, $method['line'], $name));
                 } else {
