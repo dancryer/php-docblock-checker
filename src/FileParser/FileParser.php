@@ -2,6 +2,8 @@
 
 namespace PhpDocBlockChecker\FileParser;
 
+use PhpDocBlockChecker\Code\Method;
+use PhpDocBlockChecker\Code\ReturnType;
 use PhpDocBlockChecker\DocblockParser\DocblockParser;
 use PhpDocBlockChecker\DocblockParser\ReturnTag;
 use PhpDocBlockChecker\FileInfo;
@@ -120,12 +122,20 @@ class FileParser
 
                     $type = $method->returnType;
 
+                    $returnType = ReturnType::factory()
+                        ->setNamespace($prefix ?: null)
+                        ->setClass($class->name)
+                        ->setUses($uses);
+
                     if ($type instanceof NullableType) {
                         $type = $type->type->toString();
+                        $returnType->addTypes([$type->type->toString(), 'null']);
                     } elseif ($type instanceof UnionType) {
+                        $returnType->addTypes($type->types);
                         $type = trim(implode('|', $type->types));
                     } elseif ($type instanceof NodeAbstract) {
                         $type = $type->toString();
+                        $returnType->addType($type->toString());
                     }
 
                     if (isset($uses[$type])) {
@@ -140,6 +150,16 @@ class FileParser
                         $type = ['null', $type];
                         sort($type);
                     }
+
+                    $thisMethod = Method::factory()
+                        ->setNamespace($prefix ?: null)
+                        ->setClass($class->name)
+                        ->setUses($uses)
+                        ->setLine($method->getAttribute('startLine'))
+                        ->setReturnType($returnType)
+                        ->setHasReturn(isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false)
+                        ;
+
 
                     $thisMethod = [
                         'namespace' => $prefix,
