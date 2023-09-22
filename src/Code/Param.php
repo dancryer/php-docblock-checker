@@ -24,9 +24,22 @@ class Param extends AbstractType
      */
     public function setName(string $name): self
     {
+        if (strpos($name, '$') !== 0) {
+            $name = '$' . $name;
+        }
+
         $this->name = $name;
 
         return $this;
+    }
+
+    /**
+     * @return string
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function getName(): string
+    {
+        return $this->name;
     }
 
     /**
@@ -39,5 +52,16 @@ class Param extends AbstractType
         $this->variadic = $bool;
 
         return $this;
+    }
+
+    /**
+     * Is this a variadic param
+     *
+     * @return bool
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function isVariadic(): bool
+    {
+        return $this->variadic;
     }
 }

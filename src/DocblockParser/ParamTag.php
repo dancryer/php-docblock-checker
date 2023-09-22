@@ -7,15 +7,21 @@ class ParamTag extends Tag
     /**
      * @var string
      */
-    private $type;
+    private $type = '';
     /**
      * @var string
      */
-    private $var;
+    private $var = '';
     /**
      * @var string
      */
-    private $desc;
+    private $desc = '';
+
+    /**
+     * @var string
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    private $variadic = false;
 
     /**
      * ParamTag constructor.
@@ -32,9 +38,15 @@ class ParamTag extends Tag
             return;
         }
 
-        $this->type = isset($parts[0]) ? $parts[0] : '';
-        $this->var = isset($parts[1]) ? $parts[1] : '';
-        $this->desc = isset($parts[2]) ? $parts[2] : '';
+        if (isset($parts[0])) {
+            $this->type = $parts[0];
+        }
+        if (isset($parts[1])) {
+            $this->parseName($parts[1]);
+        }
+        if (isset($parts[2])) {
+            $this->desc = $parts[2];
+        }
     }
 
     /**
@@ -59,5 +71,37 @@ class ParamTag extends Tag
     public function getDesc()
     {
         return $this->desc;
+    }
+
+    /**
+     * @return bool
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function isVariadic(): bool
+    {
+        return $this->variadic;
+    }
+
+    /**
+     * Parse the name working out if it's variadic or not
+     *
+     * @param string $name
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    private function parseName(string $name): void
+    {
+        $name = trim($name);
+
+        if (preg_match("/,\.\.\.$/", $name)) {
+            $this->variadic = true;
+            $name = substr($name, 0, -4);
+        }
+
+        if (preg_match("/^\.\.\.\$/", $name)) {
+            $this->variadic = true;
+            $name = substr($name, 3);
+        }
+
+        $this->var = $name;
     }
 }

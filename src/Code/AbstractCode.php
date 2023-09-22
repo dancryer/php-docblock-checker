@@ -9,7 +9,7 @@ namespace PhpDocBlockChecker\Code;
  *
  * @author Neil Brayfield <neil@d3r.com>
  */
-abstract class AbstractClassCode
+abstract class AbstractCode
 {
     /**
      * @var string|null
@@ -79,6 +79,30 @@ abstract class AbstractClassCode
     }
 
     /**
+     * Get full class
+     *
+     * @return string
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function getFullClass(): string
+    {
+        if ($this->getNamespace()) {
+            return $this->getNamespace() . '\\' . $this->getClass();
+        }
+
+        return $this->getClass();
+    }
+
+    /**
+     * @return string
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function getFullyQualifiedClass(): string
+    {
+        return '\\' . $this->getFullClass();
+    }
+
+    /**
      * @return array
      */
     public function getUses(): array
@@ -113,6 +137,22 @@ abstract class AbstractClassCode
     {
         $this->line = $line;
 
+        return $this;
+    }
+
+    /**
+     * Get the properties from an existing abstract
+     *
+     * @param AbstractCode $abstract
+     * @return self
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function setFromAbstract(AbstractCode $abstract): self
+    {
+        $this->setClass($abstract->getClass());
+        $this->setUses($abstract->getUses());
+        $this->setLine($abstract->getLine());
+        $this->setNamespace($abstract->getNamespace());
         return $this;
     }
 }

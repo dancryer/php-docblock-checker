@@ -5,19 +5,20 @@ declare(strict_types=1);
 namespace PhpDocBlockChecker\Code;
 
 use PhpDocBlockChecker\Code\Param;
+use PhpDocBlockChecker\Code\MethodDocBlock;
 
 /**
  * Undocumented model
  *
  * @author Neil Brayfield <neil@d3r.com>
  */
-class Method extends AbstractClassCode
+class Method extends AbstractCode
 {
 
     /** @var string */
     protected $name;
 
-    /** @var array */
+    /** @var \PhpDocBlockChecker\Code\MethodDocBlock */
     protected $docBlock;
 
     /** @var bool */
@@ -51,11 +52,11 @@ class Method extends AbstractClassCode
     }
 
     /**
-     * @param ReturnType $returnType
+     * @param ReturnType|null $returnType
      * @return self
      * @author Neil Brayfield <neil@d3r.com>
      */
-    public function setReturnType(ReturnType $returnType): self
+    public function setReturnType(ReturnType $returnType = null): self
     {
         $this->returnType = $returnType;
 
@@ -88,11 +89,11 @@ class Method extends AbstractClassCode
     /**
      * Set the docblock
      *
-     * @param array|null $docblock
+     * @param \PhpDocBlockChecker\Code\MethodDocBlock $docblock
      * @return self
      * @author Neil Brayfield <neil@d3r.com>
      */
-    public function setDocBlock(array $docblock = null): self
+    public function setDocBlock(MethodDocBlock $docblock = null): self
     {
         $this->docBlock = $docblock;
 
@@ -100,10 +101,10 @@ class Method extends AbstractClassCode
     }
 
     /**
-     * @return array|null
+     * @return \PhpDocBlockChecker\Code\MethodDocBlock|null
      * @author Neil Brayfield <neil@d3r.com>
      */
-    public function getDocblock(): ?array
+    public function getDocblock(): ?MethodDocBlock
     {
         return $this->docBlock;
     }
@@ -115,7 +116,7 @@ class Method extends AbstractClassCode
      */
     public function addParam(Param $param): self
     {
-        $this->params[] = $param;
+        $this->params[$param->getName()] = $param;
 
         return $this;
     }
@@ -127,5 +128,31 @@ class Method extends AbstractClassCode
     public function getParams(): array
     {
         return $this->params;
+    }
+
+    /**
+     * Get the parameter by the name key
+     *
+     * @param string $name
+     * @return \PhpDocBlockChecker\Code\Param|null
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function getParam(string $name): ?Param
+    {
+        if (!$this->hasParam($name)) {
+            return null;
+        }
+
+        return $this->params[$name];
+    }
+
+    /**
+     * @param string $name
+     * @return bool
+     * @author Neil Brayfield <neil@d3r.com>
+     */
+    public function hasParam(string $name): bool
+    {
+        return isset($this->params[$name]);
     }
 }

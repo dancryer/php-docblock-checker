@@ -87,6 +87,6 @@ class ParamMismatchWarning extends Warning
     {
         return parent::getDecoratedMessage() . '<info>' . $this->method . '</info> - @param <fg=blue>' .
             $this->param . '</> (' . $this->docType .
-            ')  does not match method signature (' . $this->paramType . ').';
+            ') does not match method signature <fg=blue>' . $this->paramType . '</>.';
     }
 }

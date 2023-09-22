@@ -8,7 +8,6 @@ use PhpDocBlockChecker\Status\StatusType\Warning\ReturnMissingWarning;
 
 class ReturnCheck extends Check
 {
-
     /**
      * @param FileInfo $file
      */
@@ -16,12 +15,12 @@ class ReturnCheck extends Check
     {
         foreach ($file->getMethods() as $name => $method) {
             $docblock = $method->getDocblock();
-            if ($method->getReturnType() === null) {
+            if (!$method->hasReturn() || $method->getReturnType() === null) {
                 // Nothing to check.
                 continue;
             }
 
-            if (empty($docblock['return'])) {
+            if ($docblock->getReturnType() === null) {
                 $this->fileStatus->add(
                     new ReturnMissingWarning(
                         $file->getFileName(),
@@ -33,18 +32,27 @@ class ReturnCheck extends Check
                 continue;
             }
 
-            $returnTypes = $docblock['return'];
+            $docBlockTypes = $docblock->getReturnType();
             $methodTypes = $method->getReturnType();
 
-            if ($method->getReturnType() === 'array'
-                && !is_array($returnTypes)
-                && substr($returnTypes, -2) === '[]'
-            ) {
-                // Do nothing because this is fine.
-                continue;
+            foreach ($methodTypes->getTypes() as $type) {
+                if (!$docBlockTypes->hasType($type)) {
+                    $this->fileStatus->add(
+                        new ReturnMismatchWarning(
+                            $file->getFileName(),
+                            $name,
+                            $method->getLine(),
+                            $name,
+                            $methodTypes->toString(),
+                            $docBlockTypes->toString(),
+                        )
+                    );
+
+                    continue 2;
+                }
             }
 
-            if ($methodTypes !== $returnTypes) {
+            if ($methodTypes->isNullable() !== $docBlockTypes->isNullable()) {
                 $this->fileStatus->add(
                     new ReturnMismatchWarning(
                         $file->getFileName(),
@@ -52,10 +60,9 @@ class ReturnCheck extends Check
                         $method->getLine(),
                         $name,
                         $methodTypes->toString(),
-                        is_array($returnTypes) ? implode('|', $returnTypes) : $returnTypes
+                        $docBlockTypes->toString(),
                     )
                 );
-                continue;
             }
         }
     }

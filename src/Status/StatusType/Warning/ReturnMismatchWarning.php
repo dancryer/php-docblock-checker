@@ -55,7 +55,7 @@ class ReturnMismatchWarning extends Warning
      */
     public function getReturnType()
     {
-        return $this->returnType;
+        return $this->returnType ?: 'void';
     }
 
     /**
@@ -73,6 +73,6 @@ class ReturnMismatchWarning extends Warning
     {
         return parent::getDecoratedMessage() . '<info>' . $this->method .
             '</info> - @return <fg=blue>' . $this->docType .
-            '</>  does not match method signature (' . $this->returnType . ').';
+            '</> does not match method signature <fg=blue>' . $this->returnType . '</>.';
     }
 }

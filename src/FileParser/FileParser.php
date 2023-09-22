@@ -2,7 +2,10 @@
 
 namespace PhpDocBlockChecker\FileParser;
 
+use PhpDocBlockChecker\Code\ClassDocBlock;
+use PhpDocBlockChecker\Code\DocBlockInterface;
 use PhpDocBlockChecker\Code\Method;
+use PhpDocBlockChecker\Code\MethodDocBlock;
 use PhpDocBlockChecker\Code\Param as CodeParam;
 use PhpDocBlockChecker\Code\ReturnType;
 use PhpDocBlockChecker\DocblockParser\DocblockParser;
@@ -107,11 +110,16 @@ class FileParser
                 $class = $statement;
                 $fullClassName = $prefix . '\\' . $class->name;
 
+                $classDocBlock = ClassDocBlock::factory()
+                    ->setNamespace($prefix ?: null)
+                    ->setClass($class->name)
+                    ->setUses($uses);
+
                 $classes[$fullClassName] = [
                     'file' => $file,
                     'line' => $class->getAttribute('startLine'),
                     'name' => $fullClassName,
-                    'docblock' => $this->getDocblock($class, $uses),
+                    'docblock' => $this->getDocblock($class, $classDocBlock),
                 ];
 
                 foreach ($statement->stmts as $method) {
@@ -119,98 +127,60 @@ class FileParser
                         continue;
                     }
 
+                    $methodObject = Method::factory()
+                        ->setNamespace($prefix ?: null)
+                        ->setClass($class->name)
+                        ->setUses($uses)
+                        ->setLine($method->getAttribute('startLine'))
+                        ->setName($method->name)
+                        ->setHasReturn(isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false)
+                        ;
+
+                    $methodDocBlock = MethodDocBlock::factory()->setFromAbstract($methodObject);
+                    $methodObject->setDocBlock($this->getDocblock($method, $methodDocBlock));
+
                     $fullMethodName = $fullClassName . '::' . $method->name;
 
                     $type = $method->returnType;
 
                     $returnType = ReturnType::factory()
-                        ->setNamespace($prefix ?: null)
-                        ->setClass($class->name)
-                        ->setUses($uses);
+                        ->setFromAbstract($methodObject);
 
                     if ($type instanceof NullableType) {
                         $returnType
                             ->addType($type->type->toString())
                             ->setNullable(true);
-                        $type = $type->type->toString();
                     } elseif ($type instanceof UnionType) {
                         foreach ($type->types as $toAdd) {
                             $returnType->addType($toAdd->toString());
                         }
-                        $type = trim(implode('|', $type->types));
                     } elseif ($type instanceof NodeAbstract) {
                         $returnType->addType($type->toString());
-                        $type = $type->toString();
+                    } else {
+                        $returnType = null;
                     }
 
-                    if (isset($uses[$type])) {
-                        $type = $uses[$type];
-                    }
-
-                    if ($type !== null) {
-                        $type = strpos($type, '\\') === 0 ? substr($type, 1) : $type;
-                    }
-
-                    if ($method->returnType instanceof NullableType) {
-                        $type = ['null', $type];
-                        sort($type);
-                    }
-
-                    $methodObject = Method::factory()
-                        ->setNamespace($prefix ?: null)
-                        ->setClass($class->name)
-                        ->setName($method->name)
-                        ->setUses($uses)
-                        ->setLine($method->getAttribute('startLine'))
-                        ->setReturnType($returnType)
-                        ->setDocBlock($this->getDocblock($method, $uses))
-                        ->setHasReturn(isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false)
-                        ;
-
-
-                    $thisMethod = [
-                        'namespace' => $prefix,
-                        'file' => $file,
-                        'class' => $fullClassName,
-                        'name' => $fullMethodName,
-                        'line' => $method->getAttribute('startLine'),
-                        'return' => $type,
-                        'params' => [],
-                        'docblock' => $this->getDocblock($method, $uses),
-                        'has_return' => isset($method->stmts) ? $this->statementsContainReturn($method->stmts) : false,
-                    ];
+                    $methodObject->setReturnType($returnType);
 
                     /** @var Param $param */
                     foreach ($method->params as $param) {
                         $type = $param->type;
 
                         $paramType = CodeParam::factory()
-                            ->setNamespace($prefix ?: null)
-                            ->setClass($class->name)
-                            ->setUses($uses);
+                            ->setFromAbstract($methodObject);
 
                         if ($type instanceof NullableType) {
                             $paramType
                                 ->addType($type->type->toString())
                                 ->setNullable(true);
-                            $type = $type->type->toString();
                         } elseif ($type instanceof UnionType) {
                             foreach ($type->types as $toAdd) {
                                 $paramType->addType($toAdd->toString());
                             }
-                            $type = trim(implode('|', $type->types));
                         } elseif ($type instanceof NodeAbstract) {
                             $paramType->addType($type->toString());
-                            $type = $type->toString();
                         }
 
-                        if (isset($uses[$type])) {
-                            $type = $uses[$type];
-                        }
-
-                        if ($type !== null) {
-                            $type = strpos($type, '\\') === 0 ? substr($type, 1) : $type;
-                        }
 
                         if (property_exists($param, 'default') &&
                             $param->default instanceof Expr &&
@@ -219,7 +189,6 @@ class FileParser
                             $type !== null &&
                             'null' === $param->default->name->parts[0]
                         ) {
-                            $type .= '|null';
                             $paramType->setNullable(true);
                         }
 
@@ -239,7 +208,6 @@ class FileParser
                             $paramType->setVariadic(true);
                         }
 
-                        $thisMethod['params']['$' . $name] = $type;
                         $methodObject->addParam($paramType);
                     }
 
@@ -278,17 +246,17 @@ class FileParser
     /**
      * Find and parse a docblock for a given class or method.
      * @param Stmt $stmt
-     * @param array $uses
-     * @return array|null
+     * @param \PhpDocBlockChecker\Code\DocBlockInterface $docBlock
+     * @return \PhpDocBlockChecker\Code\DocBlockInterface|null
      */
-    protected function getDocblock(Stmt $stmt, array $uses = [])
+    protected function getDocblock(Stmt $stmt, DocBlockInterface $docBlock)
     {
         $comments = $stmt->getAttribute('comments');
 
         if (is_array($comments)) {
             foreach ($comments as $comment) {
                 if ($comment instanceof Doc) {
-                    return $this->processDocblock($comment->getText(), $uses);
+                    return $this->processDocblock($comment->getText(), $docBlock);
                 }
             }
         }
@@ -298,53 +266,45 @@ class FileParser
 
     /**
      * @param string $text
-     * @param array $uses
-     * @return array
+     * @param \PhpDocBlockChecker\Code\DocBlockInterface $docBlock
+     * @return \PhpDocBlockChecker\Code\DocBlockInterface
      */
-    protected function processDocblock($text, array $uses = [])
+    protected function processDocblock($text, DocBlockInterface $docBlock): DocBlockInterface
     {
         $tagCollection = $this->docblockParser->parseComment($text);
 
         if ($tagCollection->hasTag('inheritdoc') || $tagCollection->hasTag('inheritDoc')) {
-            return ['inherit' => true];
+            $docBlock->setInherited(true);
+            return $docBlock;
         }
 
-        $rtn = ['params' => [], 'return' => null];
+        if ($docBlock instanceof MethodDocBlock) {
+            if ($tagCollection->hasTag('param')) {
+                foreach ($tagCollection->getParamTags() as $paramTag) {
+                    $param = CodeParam::factory()
+                        ->setFromAbstract($docBlock)
+                        ->addTypesFromString($paramTag->getType())
+                        ->setName($paramTag->getVar())
+                        ->setVariadic($paramTag->isVariadic());
 
-        if ($tagCollection->hasTag('param')) {
-            foreach ($tagCollection->getParamTags() as $paramTag) {
-                $types = [];
-                foreach (explode('|', $paramTag->getType()) as $tmpType) {
-                    if (isset($uses[$tmpType])) {
-                        $tmpType = $uses[$tmpType];
-                    }
-
-                    $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
+                    $docBlock->addParam($param);
                 }
+            }
 
-                $rtn['params'][$paramTag->getVar()] = implode('|', $types);
+            if ($tagCollection->hasTag('return')) {
+                $return = $tagCollection->getReturnTags();
+                $return = array_shift($return);
+
+                if ($return instanceof ReturnTag) {
+                    $returnType = ReturnType::factory()
+                        ->setFromAbstract($docBlock)
+                        ->addTypesFromString($return->getType());
+
+                    $docBlock->setReturnType($returnType);
+                }
             }
         }
 
-        if ($tagCollection->hasTag('return')) {
-            $return = $tagCollection->getReturnTags();
-            $return = array_shift($return);
-
-            if ($return instanceof ReturnTag) {
-                $types = [];
-                /** @var string $tmpType */
-                foreach (explode('|', $return->getType()) as $tmpType) {
-                    if (isset($uses[$tmpType])) {
-                        $tmpType = $uses[$tmpType];
-                    }
-
-                    $types[] = strpos($tmpType, '\\') === 0 ? substr($tmpType, 1) : $tmpType;
-                }
-                sort($types);
-                $rtn['return'] = count($types) === 1 ? $types[0] : $types;
-            }
-        }
-
-        return $rtn;
+        return $docBlock;
     }
 }
